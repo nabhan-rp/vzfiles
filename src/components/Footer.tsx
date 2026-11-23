@@ -4,9 +4,10 @@ import type { LegalTab } from './LegalModal';
 interface FooterProps {
   lang: Language;
   onOpenLegal: (tab: LegalTab) => void;
+  onOpenChangelog: () => void;
 }
 
-export function Footer({ lang, onOpenLegal }: FooterProps) {
+export function Footer({ lang, onOpenLegal, onOpenChangelog }: FooterProps) {
   const t = UI_COPY[lang].footer;
 
   return (
@@ -48,6 +49,13 @@ export function Footer({ lang, onOpenLegal }: FooterProps) {
             className="hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
           >
             {t.privacyLink}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenChangelog}
+            className="font-mono tabular-nums hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+          >
+            {t.changelogLink}
           </button>
           <a
             href="https://vikingfiles.com"

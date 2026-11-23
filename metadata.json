@@ -1,6 +1,6 @@
 {
   "name": "VZ Files",
-  "description": "Layanan transfer file sementara files.vz.gay & file.vz.gay bertenaga API VikingFile dengan SSO VZ dan penyimpanan nol di server.",
+  "description": "Unggah dan bagikan file sementara lewat files.vz.gay dengan tautan cepat, kode QR, dan Brankas SSO yang didukung oleh VikingFiles.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

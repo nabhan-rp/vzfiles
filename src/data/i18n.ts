@@ -235,12 +235,73 @@ export const UI_COPY = {
       creditBody:
         'VZ Files (files.vz.gay / file.vz.gay) dan jajanserver.com berada dalam satu naungan PT Galeri Langkah Bahagia Yuwana (galbay). Penghargaan khusus kepada VikingFiles (vikingfiles.com / vikingfile.com) sebagai penyedia layanan transfer & penyimpanan file sementara khusus untuk subdomain file.vz.gay dan files.vz.gay.',
     },
+    changelogModal: {
+      title: 'Catatan Rilis VZ Files',
+      version: 'v1.0.0',
+      releaseDate: '23 Nov 2026',
+      releaseLabel: 'Rilis Publik',
+      intro:
+        'VZ Files resmi dirilis untuk publik di files.vz.gay dan file.vz.gay di bawah naungan PT Galeri Langkah Bahagia Yuwana (galbay), didukung infrastruktur penyimpanan sementara dari VikingFiles.',
+      sections: [
+        {
+          heading: 'Fitur Utama Transfer & Berbagi',
+          items: [
+            {
+              title: 'Unggah Berkas & Tarik URL Remote',
+              desc: 'Dukungan unggahan bertahap untuk file besar maupun pengambilan langsung dari tautan HTTP/HTTPS dengan opsi isolasi path folder.',
+            },
+            {
+              title: 'Halaman Info File & Kode QR',
+              desc: 'Periksa status berkas secara massal, salin tautan berbagi VZ Files, dan hasilkan Kode QR siap unduh (PNG).',
+            },
+            {
+              title: 'Pengalihan Unduhan Resmi VikingFile',
+              desc: 'Seluruh tombol unduhan mengarah langsung ke halaman resmi VikingFiles untuk mendukung keberlanjutan infrastruktur.',
+            },
+          ],
+        },
+        {
+          heading: 'Akun VZ SSO & Brankas Multi-Hash',
+          items: [
+            {
+              title: 'Sinkronisasi Multi-Hash Lintas Perangkat',
+              desc: 'Masuk dengan akun VZ SSO (accounts.vz.gay) untuk menyimpan, mengganti, dan menyinkronkan beberapa User Hash VikingFiles secara otomatis.',
+            },
+            {
+              title: 'Kelola Berkas & Panduan Pengguna Baru',
+              desc: 'Ganti nama atau hapus file pada User Hash aktif langsung dari Brankas SSO, dilengkapi panduan 3 langkah mendapatkan User Hash di VikingFile.',
+            },
+            {
+              title: 'Optimalisasi Subdomain Ganda',
+              desc: 'Login dan sinkronisasi sesi berjalan mulus di files.vz.gay maupun file.vz.gay lengkap dengan penerusan pilihan bahasa.',
+            },
+          ],
+        },
+        {
+          heading: 'Pengalaman Pengguna & Kesiapan Publik',
+          items: [
+            {
+              title: 'Dwibahasa & Tema Adaptif',
+              desc: 'Tersedia dalam bahasa Indonesia dan Inggris dengan mode tampilan Sistem, Terang, dan Gelap.',
+            },
+            {
+              title: 'Metadata Sosial & Pencarian',
+              desc: 'Pratinjau tautan dilengkapi kartu sosial khusus agar berkas dan halaman VZ Files tampil rapi saat dibagikan.',
+            },
+          ],
+        },
+      ],
+      ecosystemLink: 'Portal vz.gay',
+      partnerLink: 'Didukung oleh VikingFiles',
+      close: 'Tutup',
+    },
     footer: {
       rights: 'VZ Files · vz.gay & jajanserver.com di bawah naungan PT Galeri Langkah Bahagia Yuwana (galbay).',
       portalLink: 'vz.gay',
       searchLink: 'VZ Search',
       tosLink: 'Ketentuan Layanan',
       privacyLink: 'Kebijakan Privasi',
+      changelogLink: 'v1.0.0 · Catatan Rilis',
       vikingSponsor: 'Didukung oleh VikingFiles',
       globalSponsor: 'jajanserver.com (galbay)',
     },
@@ -479,12 +540,73 @@ export const UI_COPY = {
       creditBody:
         'VZ Files (files.vz.gay / file.vz.gay) and jajanserver.com operate under one corporate umbrella, PT Galeri Langkah Bahagia Yuwana (galbay). Special credit to VikingFiles (vikingfiles.com / vikingfile.com) for providing temporary file transfer and storage exclusively on file.vz.gay and files.vz.gay.',
     },
+    changelogModal: {
+      title: 'VZ Files Release Notes',
+      version: 'v1.0.0',
+      releaseDate: 'Nov 23, 2026',
+      releaseLabel: 'Public Release',
+      intro:
+        'VZ Files is now publicly available on files.vz.gay and file.vz.gay under PT Galeri Langkah Bahagia Yuwana (galbay), powered by temporary file storage infrastructure from VikingFiles.',
+      sections: [
+        {
+          heading: 'Core Transfer & Sharing Features',
+          items: [
+            {
+              title: 'File Uploads & Remote URL Fetch',
+              desc: 'Supports chunked uploads for large files and remote HTTP/HTTPS URL transfers with optional folder path isolation.',
+            },
+            {
+              title: 'File Info Page & QR Codes',
+              desc: 'Batch-check file availability, copy clean VZ Files share links, and generate downloadable PNG QR codes.',
+            },
+            {
+              title: 'Official VikingFile Download Routing',
+              desc: 'Download actions route directly to official VikingFiles pages to keep infrastructure sustainable.',
+            },
+          ],
+        },
+        {
+          heading: 'VZ SSO Account & Multi-Hash Vault',
+          items: [
+            {
+              title: 'Cross-Device Multi-Hash Sync',
+              desc: 'Sign in with VZ SSO (accounts.vz.gay) to save, switch, and sync multiple VikingFiles User Hashes across devices.',
+            },
+            {
+              title: 'File Management & Onboarding Guide',
+              desc: 'Rename or delete files on your active User Hash from the Vault, complete with a 3-step guide for new VikingFiles users.',
+            },
+            {
+              title: 'Dual-Domain SSO Optimization',
+              desc: 'Seamless sign-in and cross-tab sync on both files.vz.gay and file.vz.gay with language preference forwarding.',
+            },
+          ],
+        },
+        {
+          heading: 'User Experience & Public Launch',
+          items: [
+            {
+              title: 'Bilingual & Adaptive Themes',
+              desc: 'Full Indonesian and English support with System, Light, and Dark appearance modes.',
+            },
+            {
+              title: 'Rich Link Previews',
+              desc: 'Enhanced social cards and structured page titles so shared links render cleanly across messaging apps and search engines.',
+            },
+          ],
+        },
+      ],
+      ecosystemLink: 'vz.gay Portal',
+      partnerLink: 'Powered by VikingFiles',
+      close: 'Close',
+    },
     footer: {
       rights: 'VZ Files · vz.gay & jajanserver.com under PT Galeri Langkah Bahagia Yuwana (galbay).',
       portalLink: 'vz.gay',
       searchLink: 'VZ Search',
       tosLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',
+      changelogLink: 'v1.0.0 · Release Notes',
       vikingSponsor: 'Powered by VikingFiles',
       globalSponsor: 'jajanserver.com (galbay)',
     },

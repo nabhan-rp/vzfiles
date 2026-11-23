@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, X } from 'lucide-react';
 import { AttributionSection } from './components/AttributionSection';
+import { ChangelogModal } from './components/ChangelogModal';
 import { CheckFilePanel } from './components/CheckFilePanel';
 import { Footer } from './components/Footer';
 import { LegalModal, type LegalTab } from './components/LegalModal';
@@ -9,6 +10,7 @@ import { TopBar, type WorkspaceTab } from './components/TopBar';
 import { TransferPanel } from './components/TransferPanel';
 import { WorkspaceHero } from './components/WorkspaceHero';
 import { UI_COPY } from './data/i18n';
+import { useDocumentSeo } from './hooks/useDocumentSeo';
 import { useLanguage } from './hooks/useLanguage';
 import { useSsoVault } from './hooks/useSsoVault';
 import { useTheme } from './hooks/useTheme';
@@ -44,6 +46,9 @@ export default function App() {
 
   const [legalOpen, setLegalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('tos');
+  const [changelogOpen, setChangelogOpen] = useState(false);
+
+  useDocumentSeo(lang, activeTab, inspectedHash);
 
   useEffect(() => {
     const onPopState = () => {
@@ -165,7 +170,11 @@ export default function App() {
         <AttributionSection lang={lang} />
       </main>
 
-      <Footer lang={lang} onOpenLegal={handleOpenLegal} />
+      <Footer
+        lang={lang}
+        onOpenLegal={handleOpenLegal}
+        onOpenChangelog={() => setChangelogOpen(true)}
+      />
 
       <LegalModal
         isOpen={legalOpen}
@@ -173,6 +182,12 @@ export default function App() {
         lang={lang}
         onChangeTab={setLegalTab}
         onClose={() => setLegalOpen(false)}
+      />
+
+      <ChangelogModal
+        isOpen={changelogOpen}
+        lang={lang}
+        onClose={() => setChangelogOpen(false)}
       />
     </div>
   );
