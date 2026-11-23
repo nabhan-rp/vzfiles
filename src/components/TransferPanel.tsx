@@ -31,6 +31,7 @@ interface TransferPanelProps {
   activeProfile: VikingHashProfile | null;
   onSelectProfileId: (id: string | null) => void;
   onSignIn: () => void | Promise<void>;
+  onOpenVault: () => void;
   onOpenLegal: () => void;
   onInspectHash: (hash: string) => void;
   history: LocalTransferRecord[];
@@ -46,6 +47,7 @@ export function TransferPanel({
   activeProfile,
   onSelectProfileId,
   onSignIn,
+  onOpenVault,
   onOpenLegal,
   onInspectHash,
   history,
@@ -264,6 +266,29 @@ export function TransferPanel({
             )}
           </div>
         </div>
+
+        {!activeProfile && (
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            {t.identityHintPrefix}{' '}
+            <a
+              href="https://vikingfile.com/register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              vikingfile.com/register
+            </a>{' '}
+            {t.identityHintMiddle}{' '}
+            <button
+              type="button"
+              onClick={onOpenVault}
+              className="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              {t.identityHintVault}
+            </button>
+            .
+          </p>
+        )}
 
         {/* Upload / Remote Form or Result View */}
         {result ? (

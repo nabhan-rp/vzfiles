@@ -106,6 +106,7 @@ export default function App() {
               activeProfile={vault.activeProfile}
               onSelectProfileId={vault.setActiveProfileId}
               onSignIn={vault.signIn}
+              onOpenVault={() => setActiveTab('vault')}
               onOpenLegal={() => handleOpenLegal('tos')}
               onInspectHash={handleInspectHash}
               history={history}

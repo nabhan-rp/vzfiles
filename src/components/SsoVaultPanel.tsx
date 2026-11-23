@@ -3,8 +3,10 @@ import {
   AlertCircle,
   ArrowUpRight,
   Check,
+  ChevronDown,
   Edit3,
   Eye,
+  HelpCircle,
   KeyRound,
   Plus,
   RefreshCw,
@@ -64,6 +66,13 @@ export function SsoVaultPanel({
   const [renamingHash, setRenamingHash] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [busyHash, setBusyHash] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(() => profiles.length === 0);
+
+  useEffect(() => {
+    if (profiles.length === 0) {
+      setGuideOpen(true);
+    }
+  }, [profiles.length]);
 
   const fetchFiles = useCallback(
     async (targetPage = page) => {
@@ -156,26 +165,78 @@ export function SsoVaultPanel({
 
   if (!session) {
     return (
-      <div
-        id="vault"
-        className="rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#232732] p-8 sm:p-10 text-center"
-      >
-        <div className="w-12 h-12 mx-auto rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-          <ShieldCheck className="w-6 h-6" />
+      <div id="vault" className="space-y-6">
+        <div className="rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#232732] p-8 sm:p-10 text-center">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h2 className="mt-4 font-display text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+            {t.signedOutTitle}
+          </h2>
+          <p className="mt-2 max-w-xl mx-auto text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            {t.signedOutDesc}
+          </p>
+          <button
+            type="button"
+            onClick={() => void onSignIn()}
+            className="mt-6 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors cursor-pointer"
+          >
+            {t.signInCta}
+          </button>
         </div>
-        <h2 className="mt-4 font-display text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-          {t.signedOutTitle}
-        </h2>
-        <p className="mt-2 max-w-xl mx-auto text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          {t.signedOutDesc}
-        </p>
-        <button
-          type="button"
-          onClick={() => void onSignIn()}
-          className="mt-6 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors cursor-pointer"
-        >
-          {t.signInCta}
-        </button>
+
+        <div className="rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#232732] p-6 sm:p-8 space-y-5">
+          <div>
+            <h3 className="font-display text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+              {t.guideTitle}
+            </h3>
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
+              {t.guideSubtitle}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {t.guideSteps.map((item) => (
+              <div
+                key={item.step}
+                className="p-4 rounded-xl bg-[#FAFAFA] dark:bg-[#0B0D11] border border-slate-200 dark:border-[#232732] space-y-1.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-600 dark:bg-blue-500 text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">
+                    {item.step}
+                  </span>
+                  <h4 className="font-display text-sm font-semibold text-slate-900 dark:text-white">
+                    {item.title}
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <a
+              href="https://vikingfile.com/register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap"
+            >
+              <span>{t.createHashBtn}</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+            <a
+              href="https://vikingfile.com/login"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 bg-slate-100 hover:bg-slate-200 dark:bg-[#1E232F] dark:hover:bg-[#272D3C] rounded-lg transition-colors whitespace-nowrap"
+            >
+              <span>{t.loginVikingBtn}</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
@@ -245,6 +306,81 @@ export function SsoVaultPanel({
             </button>
           </div>
         </form>
+
+        {/* 3-Step VikingFiles Onboarding Card */}
+        <div className="rounded-xl bg-[#FAFAFA] dark:bg-[#0B0D11] border border-slate-200 dark:border-[#232732] p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <h3 className="font-display text-sm font-semibold text-slate-900 dark:text-white">
+                {t.guideTitle}
+              </h3>
+            </div>
+            <button
+              type="button"
+              aria-expanded={guideOpen}
+              onClick={() => setGuideOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              <span>{guideOpen ? t.guideToggleHide : t.guideToggleShow}</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                  guideOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          {guideOpen && (
+            <div className="space-y-4 pt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {t.guideSubtitle}
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {t.guideSteps.map((item) => (
+                  <div
+                    key={item.step}
+                    className="p-3.5 rounded-lg bg-white dark:bg-[#13161C] border border-slate-200/80 dark:border-[#232732] space-y-1.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md bg-blue-600 dark:bg-blue-500 text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">
+                        {item.step}
+                      </span>
+                      <h4 className="font-display text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                        {item.title}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <a
+                  href="https://vikingfile.com/register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <span>{t.createHashBtn}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="https://vikingfile.com/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-[#191D26] border border-slate-200 dark:border-[#2B3242] hover:bg-slate-100 dark:hover:bg-[#222834] rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <span>{t.loginVikingBtn}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Saved Profiles List */}
         <div className="space-y-3">
