@@ -1,0 +1,30 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "vz-files"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+[vars]
+APP_DOMAIN = "files.vz.gay"
+ALT_DOMAIN = "file.vz.gay"
+PORTAL_DOMAIN = "vz.gay"
+AUTH0_DOMAIN = "acccounts.vz.gay"
+ACCOUNT_DASHBOARD_URL = "https://myaccount.vz.gay"
+SPONSOR_DOMAIN = "jajanserver.com"
+FILE_SPONSOR_DOMAIN = "vikingfiles.com"
+VIKINGFILE_API_URL = "https://vikingfile.com/api"
+
+# Opsional: Hubungkan binding D1, KV, dan R2 melalui Cloudflare Pages Dashboard
+# (Settings -> Functions -> Bindings) atau aktifkan blok di bawah setelah ID tersedia:
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "vz_portal_db"
+# database_id = "<YOUR_D1_DATABASE_ID>"
+#
+# [[kv_namespaces]]
+# binding = "PORTAL_KV"
+# id = "<YOUR_KV_NAMESPACE_ID>"
+#
+# [[r2_buckets]]
+# binding = "ASSETS_BUCKET"
+# bucket_name = "vz-gay-assets"

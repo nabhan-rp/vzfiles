@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VZ Files (files.vz.gay) — Transfer File Sementara</title>
+    <meta
+      name="description"
+      content="Layanan transfer dan berbagi file sementara files.vz.gay & file.vz.gay bertenaga API VikingFile dengan autentikasi VZ SSO."
+    />
+    <meta property="og:title" content="VZ Files (files.vz.gay) — Transfer File Sementara" />
+    <meta
+      property="og:description"
+      content="Layanan transfer dan berbagi file sementara files.vz.gay & file.vz.gay bertenaga API VikingFile dengan autentikasi VZ SSO."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('vz_theme') || 'system';
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = saved === 'dark' || (saved === 'system' && prefersDark);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[#FAFAFA] text-slate-900 dark:bg-[#0B0D11] dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
