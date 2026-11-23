@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -177,6 +178,7 @@ async function startServer() {
     string,
     { profiles: unknown[]; activeProfileId: string | null; updatedAt: string }
   >();
+  const devAuthCache = new Map<string, { sub: string; expiresAt: number }>();
 
   async function resolveAuth0Sub(req: Request): Promise<string | null> {
     const authHeader = String(req.headers.authorization || '');
@@ -186,12 +188,26 @@ async function startServer() {
 
     const auth0Domain =
       process.env.VITE_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN || 'accounts.vz.gay';
+    const cacheKey = crypto.createHash('sha256').update(`${auth0Domain}:${token}`).digest('hex');
+    const cached = devAuthCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.sub;
+    }
+
     const upstream = await fetch(`https://${auth0Domain}/userinfo`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     });
     if (!upstream.ok) return null;
     const data = (await upstream.json()) as { sub?: string };
-    return typeof data.sub === 'string' && data.sub.trim() ? data.sub.trim() : null;
+    const sub = typeof data.sub === 'string' && data.sub.trim() ? data.sub.trim() : null;
+    if (sub) {
+      if (devAuthCache.size >= 500) {
+        const firstKey = devAuthCache.keys().next().value;
+        if (firstKey) devAuthCache.delete(firstKey);
+      }
+      devAuthCache.set(cacheKey, { sub, expiresAt: Date.now() + 120_000 });
+    }
+    return sub;
   }
 
   app.get('/api/vault', async (req: Request, res: Response) => {

@@ -39,6 +39,7 @@ export interface PagesContext {
   env: CloudflareEnv;
   params: Record<string, string | string[]>;
   next: () => Promise<Response>;
+  waitUntil?: (promise: Promise<unknown>) => void;
 }
 
 export type PagesFunction = (context: PagesContext) => Promise<Response>;

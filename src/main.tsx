@@ -9,7 +9,9 @@ const { domain, clientId, redirectUri } = getAuth0Config();
 
 const onRedirectCallback = (appState?: AppState) => {
   if (typeof window === 'undefined') return;
-  window.history.replaceState({}, document.title, appState?.returnTo || '/');
+  const targetUrl = appState?.returnTo || '/';
+  window.history.replaceState({}, document.title, targetUrl);
+  window.dispatchEvent(new PopStateEvent('popstate'));
 };
 
 createRoot(document.getElementById('root')!).render(

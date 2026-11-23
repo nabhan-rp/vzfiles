@@ -11,6 +11,8 @@ export const UI_COPY = {
       signingIn: 'Memuat...',
       manageAccount: 'Kelola Akun (myaccount.vz.gay)',
       signOut: 'Keluar',
+      signInError: 'Proses masuk SSO dibatalkan atau tidak dapat diselesaikan. Silakan coba lagi.',
+      dismissError: 'Tutup',
     },
     controls: {
       themeSystem: 'Sistem',
@@ -253,6 +255,8 @@ export const UI_COPY = {
       signingIn: 'Loading...',
       manageAccount: 'Manage Account (myaccount.vz.gay)',
       signOut: 'Sign Out',
+      signInError: 'SSO sign-in was canceled or could not be completed. Please try again.',
+      dismissError: 'Dismiss',
     },
     controls: {
       themeSystem: 'System',

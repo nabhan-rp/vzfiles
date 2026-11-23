@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AlertCircle, X } from 'lucide-react';
 import { AttributionSection } from './components/AttributionSection';
 import { CheckFilePanel } from './components/CheckFilePanel';
 import { Footer } from './components/Footer';
@@ -7,6 +8,7 @@ import { SsoVaultPanel } from './components/SsoVaultPanel';
 import { TopBar, type WorkspaceTab } from './components/TopBar';
 import { TransferPanel } from './components/TransferPanel';
 import { WorkspaceHero } from './components/WorkspaceHero';
+import { UI_COPY } from './data/i18n';
 import { useLanguage } from './hooks/useLanguage';
 import { useSsoVault } from './hooks/useSsoVault';
 import { useTheme } from './hooks/useTheme';
@@ -30,7 +32,7 @@ function readInitialHashFromLocation(): string | null {
 export default function App() {
   const { theme, setTheme } = useTheme();
   const { lang, setLang } = useLanguage();
-  const vault = useSsoVault();
+  const vault = useSsoVault(lang);
   const { history, addHistoryItem, removeHistoryItem, clearHistory } = useTransferHistory();
 
   const [inspectedHash, setInspectedHash] = useState<string | null>(() =>
@@ -98,6 +100,26 @@ export default function App() {
         />
 
         <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          {vault.hasAuthError && (
+            <div
+              role="alert"
+              className="mb-6 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 flex items-center justify-between gap-3 text-xs sm:text-sm text-red-700 dark:text-red-300"
+            >
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{UI_COPY[lang].nav.signInError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={vault.dismissAuthError}
+                aria-label={UI_COPY[lang].nav.dismissError}
+                className="p-1 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {activeTab === 'transfer' && (
             <TransferPanel
               lang={lang}
