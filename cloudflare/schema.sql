@@ -33,3 +33,10 @@ CREATE TABLE IF NOT EXISTS redirect_rules (
 INSERT OR REPLACE INTO redirect_rules (id, source_host, target_url, status_code, service_id) VALUES
   ('redir-kaca-blog', 'kaca.blog', 'https://go-blog.vz.gay', 301, 'go-blog'),
   ('redir-blog-vz', 'blog.vz.gay', 'https://goblog.vz.gay', 301, 'go-blog');
+
+CREATE TABLE IF NOT EXISTS user_vaults (
+  sub TEXT PRIMARY KEY,
+  profiles_json TEXT NOT NULL DEFAULT '[]',
+  active_profile_id TEXT DEFAULT NULL,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);

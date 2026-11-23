@@ -13,7 +13,7 @@ interface SsoModalProps {
   authError: string | null;
   onStartAuth0: () => Promise<boolean>;
   onSignInWorkspace: (email: string) => void;
-  onSignOut: () => void;
+  onSignOut: () => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -68,7 +68,7 @@ export function SsoModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#262C3A] shadow-xl p-6 sm:p-7"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#262C3A] shadow-xl p-6 sm:p-7"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#232732]">
@@ -100,14 +100,20 @@ export function SsoModal({
         </div>
 
         <div className="mt-5 space-y-4">
-          <div className="space-y-2.5">
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0E1117] border border-slate-200 dark:border-[#232732] flex items-center justify-between gap-2">
+          <div className="space-y-2">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0E1117] border border-slate-200 dark:border-[#232732] flex items-center justify-between gap-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">{t.ssoDomainLabel}</span>
               <span className="font-mono text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                 {auth0Domain}
               </span>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0E1117] border border-slate-200 dark:border-[#232732] flex items-center justify-between gap-2">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0E1117] border border-slate-200 dark:border-[#232732] flex items-center justify-between gap-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">{t.tenantLabel}</span>
+              <span className="font-mono text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
+                galbay · galbay.eu.auth0.com
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0E1117] border border-slate-200 dark:border-[#232732] flex items-center justify-between gap-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">{t.dashboardLabel}</span>
               <span className="font-mono text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                 myaccount.vz.gay
@@ -134,7 +140,7 @@ export function SsoModal({
               <button
                 type="button"
                 onClick={() => {
-                  onSignOut();
+                  void onSignOut();
                   onClose();
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-[#191D26] border border-slate-200 dark:border-[#2B3242] rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
@@ -150,31 +156,57 @@ export function SsoModal({
               </p>
 
               {!auth0ClientId && (
-                <form onSubmit={handleWorkspaceSubmit} className="space-y-3 pt-1">
-                  <div>
-                    <label
-                      htmlFor="vz-workspace-email"
-                      className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
-                    >
-                      {t.workspaceEmailLabel}
-                    </label>
-                    <input
-                      id="vz-workspace-email"
-                      type="text"
-                      required
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder={t.workspaceEmailPlaceholder}
-                      className="w-full px-3.5 py-2 text-sm rounded-lg bg-[#FAFAFA] dark:bg-[#0B0D11] border border-slate-300 dark:border-[#2A303E] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500"
-                    />
+                <>
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0E1117] border border-slate-200 dark:border-[#232732] space-y-2 text-xs">
+                    <p className="font-display font-semibold text-slate-900 dark:text-white">
+                      {t.setupChecklistTitle}
+                    </p>
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400">{t.setupCallbackLabel}</p>
+                      <p className="font-mono text-slate-800 dark:text-slate-200 break-all">
+                        https://files.vz.gay/callback, https://file.vz.gay/callback
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400">{t.setupOriginLabel}</p>
+                      <p className="font-mono text-slate-800 dark:text-slate-200 break-all">
+                        https://files.vz.gay, https://file.vz.gay
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400">{t.setupEnvLabel}</p>
+                      <p className="font-mono text-slate-800 dark:text-slate-200 break-all">
+                        VITE_AUTH0_DOMAIN=accounts.vz.gay · VITE_AUTH0_CLIENT_ID=&lt;SPA_CLIENT_ID&gt;
+                      </p>
+                    </div>
                   </div>
-                  <button
-                    type="submit"
-                    className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
-                  >
-                    {t.workspaceSignInBtn}
-                  </button>
-                </form>
+
+                  <form onSubmit={handleWorkspaceSubmit} className="space-y-3 pt-1">
+                    <div>
+                      <label
+                        htmlFor="vz-workspace-email"
+                        className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+                      >
+                        {t.workspaceEmailLabel}
+                      </label>
+                      <input
+                        id="vz-workspace-email"
+                        type="text"
+                        required
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder={t.workspaceEmailPlaceholder}
+                        className="w-full px-3.5 py-2 text-sm rounded-lg bg-[#FAFAFA] dark:bg-[#0B0D11] border border-slate-300 dark:border-[#2A303E] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+                    >
+                      {t.workspaceSignInBtn}
+                    </button>
+                  </form>
+                </>
               )}
             </>
           )}
@@ -193,7 +225,7 @@ export function SsoModal({
           {!session && (
             <button
               type="button"
-              onClick={handleAuth0Click}
+              onClick={() => void handleAuth0Click()}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <span>{t.launchAuth0}</span>

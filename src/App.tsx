@@ -126,6 +126,7 @@ export default function App() {
             <SsoVaultPanel
               lang={lang}
               session={vault.session}
+              syncStatus={vault.syncStatus}
               profiles={vault.profiles}
               activeProfile={vault.activeProfile}
               onOpenSso={() => setSsoOpen(true)}

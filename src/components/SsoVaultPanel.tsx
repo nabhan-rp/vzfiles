@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { UI_COPY, type Language } from '../data/i18n';
-import type { SsoSession, VikingHashProfile } from '../hooks/useSsoVault';
+import type { SsoSession, VaultSyncStatus, VikingHashProfile } from '../hooks/useSsoVault';
 import {
   buildVikingOfficialUrl,
   deleteVikingFile,
@@ -26,6 +26,7 @@ import {
 interface SsoVaultPanelProps {
   lang: Language;
   session: SsoSession | null;
+  syncStatus: VaultSyncStatus;
   profiles: VikingHashProfile[];
   activeProfile: VikingHashProfile | null;
   onOpenSso: () => void;
@@ -38,6 +39,7 @@ interface SsoVaultPanelProps {
 export function SsoVaultPanel({
   lang,
   session,
+  syncStatus,
   profiles,
   activeProfile,
   onOpenSso,
@@ -195,6 +197,12 @@ export function SsoVaultPanel({
             <p className="text-xs text-slate-500 dark:text-slate-400">{t.activeSessionLabel}</p>
             <p className="font-mono text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
               {session.email}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {syncStatus === 'synced' && t.syncSynced}
+              {syncStatus === 'syncing' && t.syncSyncing}
+              {syncStatus === 'error' && t.syncError}
+              {syncStatus === 'local' && t.syncLocal}
             </p>
           </div>
         </div>

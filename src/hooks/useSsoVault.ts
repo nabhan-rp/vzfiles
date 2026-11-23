@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createAuth0Client, type Auth0Client } from '@auth0/auth0-spa-js';
 
 export interface SsoSession {
   sub: string;
@@ -16,6 +17,8 @@ export interface VikingHashProfile {
   addedAt: string;
 }
 
+export type VaultSyncStatus = 'local' | 'syncing' | 'synced' | 'error';
+
 interface VaultStore {
   session: SsoSession | null;
   profilesBySub: Record<string, VikingHashProfile[]>;
@@ -23,8 +26,6 @@ interface VaultStore {
 }
 
 const VAULT_STORAGE_KEY = 'vz_files_sso_vault_v1';
-const PKCE_VERIFIER_KEY = 'vz_auth0_pkce_verifier';
-const PKCE_STATE_KEY = 'vz_auth0_pkce_state';
 
 function readVault(): VaultStore {
   try {
@@ -51,139 +52,206 @@ function writeVault(store: VaultStore) {
   }
 }
 
-function base64UrlEncode(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function generatePkcePair() {
-  const randomBytes = new Uint8Array(32);
-  crypto.getRandomValues(randomBytes);
-  const verifier = base64UrlEncode(randomBytes.buffer);
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-  const challenge = base64UrlEncode(digest);
-  const stateBytes = new Uint8Array(16);
-  crypto.getRandomValues(stateBytes);
-  const state = base64UrlEncode(stateBytes.buffer);
-  return { verifier, challenge, state };
+function mergeProfiles(
+  remote: VikingHashProfile[],
+  local: VikingHashProfile[]
+): VikingHashProfile[] {
+  const byHash = new Map<string, VikingHashProfile>();
+  remote.forEach((p) => {
+    if (p && p.userHash) byHash.set(p.userHash, p);
+  });
+  local.forEach((p) => {
+    if (p && p.userHash && !byHash.has(p.userHash)) {
+      byHash.set(p.userHash, p);
+    }
+  });
+  return Array.from(byHash.values());
 }
 
 export function useSsoVault() {
   const [store, setStore] = useState<VaultStore>(() => readVault());
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<VaultSyncStatus>('local');
 
-  const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN || 'acccounts.vz.gay';
+  const auth0ClientRef = useRef<Auth0Client | null>(null);
+  const initialSyncDoneRef = useRef(false);
+
+  const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN || 'accounts.vz.gay';
   const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
   const accountPortalUrl = import.meta.env.VITE_ACCOUNT_PORTAL_URL || 'https://myaccount.vz.gay';
+
+  const getRedirectUri = useCallback(() => {
+    if (import.meta.env.VITE_AUTH0_REDIRECT_URI) {
+      return String(import.meta.env.VITE_AUTH0_REDIRECT_URI);
+    }
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/callback`;
+    }
+    return 'https://files.vz.gay/callback';
+  }, []);
 
   useEffect(() => {
     writeVault(store);
   }, [store]);
 
-  // Handle Auth0 PKCE callback when redirected back with ?code=...&state=...
+  const syncPullFromCloud = useCallback(async (client: Auth0Client, sub: string) => {
+    try {
+      setSyncStatus('syncing');
+      const token = await client.getTokenSilently();
+      const res = await fetch('/api/vault', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setSyncStatus('local');
+        return;
+      }
+      const data = (await res.json()) as {
+        synced?: boolean;
+        profiles?: VikingHashProfile[];
+        activeProfileId?: string | null;
+      };
+      if (!data.synced) {
+        setSyncStatus('local');
+        return;
+      }
+
+      const remoteProfiles = Array.isArray(data.profiles) ? data.profiles : [];
+      setStore((prev) => {
+        const localProfiles = prev.profilesBySub[sub] || [];
+        const merged = mergeProfiles(remoteProfiles, localProfiles);
+        const activeId =
+          data.activeProfileId ??
+          prev.activeProfileBySub[sub] ??
+          merged[0]?.id ??
+          null;
+        return {
+          ...prev,
+          profilesBySub: { ...prev.profilesBySub, [sub]: merged },
+          activeProfileBySub: { ...prev.activeProfileBySub, [sub]: activeId },
+        };
+      });
+      setSyncStatus('synced');
+    } catch {
+      setSyncStatus('local');
+    } finally {
+      initialSyncDoneRef.current = true;
+    }
+  }, []);
+
+  const syncPushToCloud = useCallback(
+    async (profiles: VikingHashProfile[], activeProfileId: string | null) => {
+      const client = auth0ClientRef.current;
+      if (!client) return;
+      try {
+        setSyncStatus('syncing');
+        const token = await client.getTokenSilently();
+        const res = await fetch('/api/vault', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ profiles, activeProfileId }),
+        });
+        if (!res.ok) {
+          setSyncStatus('error');
+          return;
+        }
+        const data = (await res.json()) as { synced?: boolean };
+        setSyncStatus(data.synced ? 'synced' : 'local');
+      } catch {
+        setSyncStatus('error');
+      }
+    },
+    []
+  );
+
+  // Initialize official @auth0/auth0-spa-js v2 client when VITE_AUTH0_CLIENT_ID is configured
   useEffect(() => {
     if (!auth0ClientId || typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
-    if (!code || !state) return;
 
-    const savedState = sessionStorage.getItem(PKCE_STATE_KEY);
-    const verifier = sessionStorage.getItem(PKCE_VERIFIER_KEY);
-    if (!savedState || !verifier || savedState !== state) return;
-
-    const redirectUri =
-      import.meta.env.VITE_AUTH0_REDIRECT_URI || `${window.location.origin}/callback`;
-
+    let mounted = true;
     setAuthBusy(true);
     setAuthError(null);
 
     (async () => {
       try {
-        const tokenRes = await fetch(`https://${auth0Domain}/oauth/token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            grant_type: 'authorization_code',
-            client_id: auth0ClientId,
-            code_verifier: verifier,
-            code,
-            redirect_uri: redirectUri,
-          }),
+        const client = await createAuth0Client({
+          domain: auth0Domain,
+          clientId: auth0ClientId,
+          cacheLocation: 'localstorage',
+          useRefreshTokens: true,
+          authorizationParams: {
+            redirect_uri: getRedirectUri(),
+            scope: 'openid profile email',
+          },
         });
-        const tokenData = (await tokenRes.json()) as {
-          access_token?: string;
-          error_description?: string;
-        };
-        if (!tokenRes.ok || !tokenData.access_token) {
-          throw new Error(tokenData.error_description || 'Auth0 token exchange failed');
+
+        if (!mounted) return;
+        auth0ClientRef.current = client;
+
+        const search = window.location.search;
+        if (search.includes('code=') && search.includes('state=')) {
+          await client.handleRedirectCallback();
+          window.history.replaceState({}, document.title, '/');
         }
 
-        const userRes = await fetch(`https://${auth0Domain}/userinfo`, {
-          headers: { Authorization: `Bearer ${tokenData.access_token}` },
-        });
-        const userInfo = (await userRes.json()) as {
-          sub?: string;
-          name?: string;
-          email?: string;
-          nickname?: string;
-        };
-
-        if (!userInfo.sub) {
-          throw new Error('Missing VZ SSO user identifier');
+        const isAuth = await client.isAuthenticated();
+        if (isAuth) {
+          const user = await client.getUser();
+          if (user?.sub && mounted) {
+            const session: SsoSession = {
+              sub: user.sub,
+              name: user.name || user.nickname || user.email || 'VZ Member',
+              email: user.email || '',
+              mode: 'auth0',
+              signedInAt: new Date().toISOString(),
+            };
+            setStore((prev) => ({ ...prev, session }));
+            await syncPullFromCloud(client, user.sub);
+          }
         }
-
-        const session: SsoSession = {
-          sub: userInfo.sub,
-          name: userInfo.name || userInfo.nickname || userInfo.email || 'VZ Member',
-          email: userInfo.email || '',
-          mode: 'auth0',
-          signedInAt: new Date().toISOString(),
-        };
-
-        setStore((prev) => ({ ...prev, session }));
-        sessionStorage.removeItem(PKCE_STATE_KEY);
-        sessionStorage.removeItem(PKCE_VERIFIER_KEY);
-        window.history.replaceState({}, '', '/');
       } catch (err) {
-        setAuthError(err instanceof Error ? err.message : 'Auth0 callback error');
+        if (mounted) {
+          setAuthError(err instanceof Error ? err.message : 'Auth0 SSO initialization failed');
+        }
       } finally {
-        setAuthBusy(false);
+        if (mounted) setAuthBusy(false);
       }
     })();
-  }, [auth0ClientId, auth0Domain]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [auth0ClientId, auth0Domain, getRedirectUri, syncPullFromCloud]);
 
   const startAuth0Login = useCallback(async () => {
     if (!auth0ClientId) {
       return false;
     }
-    const { verifier, challenge, state } = await generatePkcePair();
-    sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier);
-    sessionStorage.setItem(PKCE_STATE_KEY, state);
 
-    const redirectUri =
-      import.meta.env.VITE_AUTH0_REDIRECT_URI || `${window.location.origin}/callback`;
+    const client =
+      auth0ClientRef.current ||
+      (await createAuth0Client({
+        domain: auth0Domain,
+        clientId: auth0ClientId,
+        cacheLocation: 'localstorage',
+        useRefreshTokens: true,
+        authorizationParams: {
+          redirect_uri: getRedirectUri(),
+          scope: 'openid profile email',
+        },
+      }));
 
-    const authorizeUrl =
-      `https://${auth0Domain}/authorize?` +
-      new URLSearchParams({
-        response_type: 'code',
-        client_id: auth0ClientId,
-        redirect_uri: redirectUri,
-        scope: 'openid profile email',
-        state,
-        code_challenge: challenge,
-        code_challenge_method: 'S256',
-      }).toString();
-
-    window.location.assign(authorizeUrl);
+    auth0ClientRef.current = client;
+    await client.loginWithRedirect({
+      authorizationParams: {
+        redirect_uri: getRedirectUri(),
+      },
+    });
     return true;
-  }, [auth0ClientId, auth0Domain]);
+  }, [auth0ClientId, auth0Domain, getRedirectUri]);
 
   const signInWorkspaceSession = useCallback((identifier: string, displayName?: string) => {
     const cleanId = identifier.trim().toLowerCase();
@@ -201,12 +269,24 @@ export function useSsoVault() {
         signedInAt: new Date().toISOString(),
       },
     }));
+    setSyncStatus('local');
     setAuthError(null);
   }, []);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    const currentMode = store.session?.mode;
     setStore((prev) => ({ ...prev, session: null }));
-  }, []);
+    setSyncStatus('local');
+    initialSyncDoneRef.current = false;
+
+    if (currentMode === 'auth0' && auth0ClientRef.current && typeof window !== 'undefined') {
+      await auth0ClientRef.current.logout({
+        logoutParams: {
+          returnTo: window.location.origin,
+        },
+      });
+    }
+  }, [store.session?.mode]);
 
   const currentSub = store.session?.sub || null;
   const profiles: VikingHashProfile[] = currentSub ? store.profilesBySub[currentSub] || [] : [];
@@ -230,11 +310,15 @@ export function useSsoVault() {
 
       setStore((prev) => {
         const existing = prev.profilesBySub[currentSub] || [];
+        const nextProfiles = [newProfile, ...existing];
+        if (prev.session?.mode === 'auth0') {
+          void syncPushToCloud(nextProfiles, newProfile.id);
+        }
         return {
           ...prev,
           profilesBySub: {
             ...prev.profilesBySub,
-            [currentSub]: [newProfile, ...existing],
+            [currentSub]: nextProfiles,
           },
           activeProfileBySub: {
             ...prev.activeProfileBySub,
@@ -243,7 +327,7 @@ export function useSsoVault() {
         };
       });
     },
-    [currentSub]
+    [currentSub, syncPushToCloud]
   );
 
   const removeHashProfile = useCallback(
@@ -252,6 +336,11 @@ export function useSsoVault() {
       setStore((prev) => {
         const filtered = (prev.profilesBySub[currentSub] || []).filter((p) => p.id !== id);
         const currentActive = prev.activeProfileBySub[currentSub];
+        const nextActive =
+          currentActive === id ? (filtered[0]?.id ?? null) : (currentActive ?? null);
+        if (prev.session?.mode === 'auth0') {
+          void syncPushToCloud(filtered, nextActive);
+        }
         return {
           ...prev,
           profilesBySub: {
@@ -260,27 +349,32 @@ export function useSsoVault() {
           },
           activeProfileBySub: {
             ...prev.activeProfileBySub,
-            [currentSub]:
-              currentActive === id ? (filtered[0]?.id ?? null) : (currentActive ?? null),
+            [currentSub]: nextActive,
           },
         };
       });
     },
-    [currentSub]
+    [currentSub, syncPushToCloud]
   );
 
   const setActiveProfileId = useCallback(
     (id: string | null) => {
       if (!currentSub) return;
-      setStore((prev) => ({
-        ...prev,
-        activeProfileBySub: {
-          ...prev.activeProfileBySub,
-          [currentSub]: id,
-        },
-      }));
+      setStore((prev) => {
+        const currentProfiles = prev.profilesBySub[currentSub] || [];
+        if (prev.session?.mode === 'auth0' && initialSyncDoneRef.current) {
+          void syncPushToCloud(currentProfiles, id);
+        }
+        return {
+          ...prev,
+          activeProfileBySub: {
+            ...prev.activeProfileBySub,
+            [currentSub]: id,
+          },
+        };
+      });
     },
-    [currentSub]
+    [currentSub, syncPushToCloud]
   );
 
   return {
@@ -293,6 +387,7 @@ export function useSsoVault() {
     accountPortalUrl,
     authBusy,
     authError,
+    syncStatus,
     startAuth0Login,
     signInWorkspaceSession,
     signOut,

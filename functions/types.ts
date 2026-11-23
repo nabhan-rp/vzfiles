@@ -2,6 +2,7 @@ export interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
   first<T = Record<string, unknown>>(): Promise<T | null>;
+  run(): Promise<{ success: boolean }>;
 }
 
 export interface D1Database {

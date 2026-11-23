@@ -173,6 +173,65 @@ async function startServer() {
 
   app.use(express.json({ limit: '2mb' }));
 
+  const devVaultStore = new Map<
+    string,
+    { profiles: unknown[]; activeProfileId: string | null; updatedAt: string }
+  >();
+
+  async function resolveAuth0Sub(req: Request): Promise<string | null> {
+    const authHeader = String(req.headers.authorization || '');
+    if (!authHeader.toLowerCase().startsWith('bearer ')) return null;
+    const token = authHeader.slice(7).trim();
+    if (!token) return null;
+
+    const auth0Domain =
+      process.env.VITE_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN || 'accounts.vz.gay';
+    const upstream = await fetch(`https://${auth0Domain}/userinfo`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    });
+    if (!upstream.ok) return null;
+    const data = (await upstream.json()) as { sub?: string };
+    return typeof data.sub === 'string' && data.sub.trim() ? data.sub.trim() : null;
+  }
+
+  app.get('/api/vault', async (req: Request, res: Response) => {
+    try {
+      const sub = await resolveAuth0Sub(req);
+      if (!sub) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const existing = devVaultStore.get(sub);
+      res.json({
+        synced: true,
+        backend: 'dev-memory',
+        profiles: existing?.profiles ?? [],
+        activeProfileId: existing?.activeProfileId ?? null,
+        updatedAt: existing?.updatedAt ?? null,
+      });
+    } catch {
+      res.status(502).json({ error: 'Failed to verify Auth0 session' });
+    }
+  });
+
+  app.put('/api/vault', async (req: Request, res: Response) => {
+    try {
+      const sub = await resolveAuth0Sub(req);
+      if (!sub) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles.slice(0, 50) : [];
+      const activeProfileId =
+        typeof req.body?.activeProfileId === 'string' ? req.body.activeProfileId : null;
+      const updatedAt = new Date().toISOString();
+      devVaultStore.set(sub, { profiles, activeProfileId, updatedAt });
+      res.json({ synced: true, backend: 'dev-memory', updatedAt });
+    } catch {
+      res.status(502).json({ error: 'Failed to sync vault' });
+    }
+  });
+
   app.get('/api/viking/get-server', async (_req: Request, res: Response) => {
     try {
       const server = await getVikingServer();

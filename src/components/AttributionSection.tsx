@@ -41,10 +41,12 @@ export function AttributionSection({ lang }: AttributionSectionProps) {
           </div>
         </div>
 
-        {/* Global vz.gay ecosystem sponsor */}
+        {/* Corporate umbrella: galbay (PT Galeri Langkah Bahagia Yuwana) */}
         <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#232732] flex flex-col justify-between gap-4">
           <div>
-            <p className="font-mono text-xs text-slate-500 dark:text-slate-400">vz.gay</p>
+            <p className="font-mono text-xs text-slate-500 dark:text-slate-400">
+              galbay · vz.gay · jajanserver.com
+            </p>
             <h3 className="mt-1.5 font-display text-base font-bold text-slate-900 dark:text-white">
               {t.globalTitle}
             </h3>
