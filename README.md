@@ -20,7 +20,7 @@
 
 ## Arsitektur Singkat / Tech Stack
 
-- **Frontend:** React 19, TypeScript, Vite 8, Tailwind CSS v4, Lucide Icons, `qrcode`, `@auth0/auth0-spa-js` v2
+- **Frontend:** React 19, TypeScript, Vite 8, Tailwind CSS v4, Lucide Icons, `qrcode`, `@auth0/auth0-react` v2
 - **Local / Node Dev Server:** Express + `vite.middlewares` (`server.ts`, port `3000`)
 - **Production Edge Runtime:** Cloudflare Pages + Cloudflare Pages Functions (`/functions/api/*`, `/functions/_middleware.js`)
 - **Optional Cloud Sync:** Cloudflare D1 (`DB` binding) atau Cloudflare KV (`PORTAL_KV` binding)
@@ -47,8 +47,8 @@ cp .env.example .env
 
 ```env
 VITE_AUTH0_DOMAIN="accounts.vz.gay"
-VITE_AUTH0_CLIENT_ID=""
-VITE_AUTH0_REDIRECT_URI="http://localhost:3000/callback"
+VITE_AUTH0_CLIENT_ID="wxhySCLqtKPGy53uEVWvH2RumGdIp1DP"
+# VITE_AUTH0_REDIRECT_URI="http://localhost:3000/"
 VITE_ACCOUNT_PORTAL_URL="https://myaccount.vz.gay"
 ```
 
@@ -75,7 +75,7 @@ npm run build
 | :--- | :--- | :--- |
 | [Panduan Cloudflare D1](./docs/CLOUDFLARE_D1.md) | Cara membuat, migrasi tabel `user_vaults`, dan menghubungkan binding `DB` lewat `wrangler.toml`. | How to provision, migrate `user_vaults`, and bind `DB` via `wrangler.toml`. |
 | [Panduan Cloudflare KV](./docs/CLOUDFLARE_KV.md) | Cara membuat KV Namespace, menghubungkan binding `PORTAL_KV` lewat `wrangler.toml`, dan verifikasi sync. | How to create a KV Namespace, bind `PORTAL_KV` via `wrangler.toml`, and verify sync. |
-| [Integrasi Auth0 SSO](./docs/AUTH0_SSO.md) | Tutorial lengkap setup tenant `galbay` (`accounts.vz.gay`) dan `@auth0/auth0-spa-js`. | Complete guide for tenant `galbay` (`accounts.vz.gay`) and `@auth0/auth0-spa-js`. |
+| [Integrasi Auth0 SSO](./docs/AUTH0_SSO.md) | Tutorial lengkap setup tenant `galbay` (`accounts.vz.gay`) dan `@auth0/auth0-react`. | Complete guide for tenant `galbay` (`accounts.vz.gay`) and `@auth0/auth0-react`. |
 | [Deploy Cloudflare Pages](./docs/CLOUDFLARE_PAGES_DEPLOY.md) | Pengaturan build Pages, wildcard proxy (`_middleware.js`), dan domain kustom. | Pages build settings, wildcard proxy (`_middleware.js`), and custom domains. |
 | [API VikingFile & Arsitektur](./docs/VIKINGFILE_API.md) | Referensi endpoint `/api/viking/*`, fallback CORS relay, QR code, dan ToS/Privasi. | Reference for `/api/viking/*`, CORS relay fallback, QR code, and ToS/Privacy. |
 

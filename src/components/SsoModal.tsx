@@ -10,8 +10,10 @@ interface SsoModalProps {
   auth0Domain: string;
   auth0ClientId: string;
   accountPortalUrl: string;
+  authBusy: boolean;
   authError: string | null;
   onStartAuth0: () => Promise<boolean>;
+  onStartAuth0Signup: () => Promise<boolean>;
   onSignInWorkspace: (email: string) => void;
   onSignOut: () => void | Promise<void>;
   onClose: () => void;
@@ -24,8 +26,10 @@ export function SsoModal({
   auth0Domain,
   auth0ClientId,
   accountPortalUrl,
+  authBusy,
   authError,
   onStartAuth0,
+  onStartAuth0Signup,
   onSignInWorkspace,
   onSignOut,
   onClose,
@@ -54,6 +58,13 @@ export function SsoModal({
 
   const handleAuth0Click = async () => {
     const started = await onStartAuth0();
+    if (!started) {
+      window.open(`https://${auth0Domain}`, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleAuth0SignupClick = async () => {
+    const started = await onStartAuth0Signup();
     if (!started) {
       window.open(`https://${auth0Domain}`, '_blank', 'noopener,noreferrer');
     }
@@ -164,13 +175,13 @@ export function SsoModal({
                     <div>
                       <p className="text-slate-500 dark:text-slate-400">{t.setupCallbackLabel}</p>
                       <p className="font-mono text-slate-800 dark:text-slate-200 break-all">
-                        https://files.vz.gay/callback, https://file.vz.gay/callback
+                        https://files.vz.gay/, https://file.vz.gay/
                       </p>
                     </div>
                     <div>
                       <p className="text-slate-500 dark:text-slate-400">{t.setupOriginLabel}</p>
                       <p className="font-mono text-slate-800 dark:text-slate-200 break-all">
-                        https://files.vz.gay, https://file.vz.gay
+                        https://files.vz.gay/, https://file.vz.gay/
                       </p>
                     </div>
                     <div>
@@ -223,14 +234,25 @@ export function SsoModal({
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
           {!session && (
-            <button
-              type="button"
-              onClick={() => void handleAuth0Click()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <span>{t.launchAuth0}</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={authBusy}
+                onClick={() => void handleAuth0SignupClick()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-[#191D26] border border-slate-300 dark:border-[#2B3242] hover:bg-slate-50 dark:hover:bg-[#212735] disabled:opacity-50 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <span>{t.signupAuth0}</span>
+              </button>
+              <button
+                type="button"
+                disabled={authBusy}
+                onClick={() => void handleAuth0Click()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 disabled:opacity-50 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <span>{authBusy ? t.authChecking : t.launchAuth0}</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </>
           )}
         </div>
       </div>

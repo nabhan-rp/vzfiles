@@ -43,7 +43,7 @@ if (host.endsWith(".pages.dev") && !viaProxy) {
 
 ## 3. Daftar Periksa Produksi / Production Checklist
 
-1. **Build Env Vars**: Set `VITE_AUTH0_DOMAIN=accounts.vz.gay` dan `VITE_AUTH0_CLIENT_ID` di **Settings → Variables and Secrets**.
-2. **D1 / KV Bindings (Opsional)**: Hubungkan D1 (`DB`) atau KV (`PORTAL_KV`) di **Settings → Bindings** agar Brankas Multi-Hash tersinkron lintas perangkat. Lihat [Panduan Cloudflare D1](./CLOUDFLARE_D1.md).
-3. **Auth0 URLs**: Pastikan `https://files.vz.gay/callback` dan `https://file.vz.gay/callback` terdaftar di Auth0 tenant `galbay`. Lihat [Integrasi Auth0 SSO](./AUTH0_SSO.md).
+1. **Build Env Vars**: Set `VITE_AUTH0_DOMAIN=accounts.vz.gay` dan `VITE_AUTH0_CLIENT_ID=wxhySCLqtKPGy53uEVWvH2RumGdIp1DP` (opsional, karena sudah menjadi default aplikasi) di **Settings → Variables and Secrets**.
+2. **D1 / KV Bindings (Opsional)**: Hubungkan D1 (`DB`) atau KV (`PORTAL_KV`) lewat `wrangler.toml` agar Brankas Multi-Hash tersinkron lintas perangkat. Lihat [Panduan Cloudflare D1](./CLOUDFLARE_D1.md).
+3. **Auth0 URLs**: Pastikan `https://files.vz.gay/` dan `https://file.vz.gay/` terdaftar di Allowed Callback URLs, Allowed Logout URLs, dan Allowed Web Origins pada Auth0 tenant `galbay`. Lihat [Integrasi Auth0 SSO](./AUTH0_SSO.md).
 4. **Security Headers (`public/_headers`)**: Header `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, dan `Referrer-Policy: strict-origin-when-cross-origin` otomatis diterapkan oleh Cloudflare Pages.

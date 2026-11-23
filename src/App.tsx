@@ -150,8 +150,10 @@ export default function App() {
         auth0Domain={vault.auth0Domain}
         auth0ClientId={vault.auth0ClientId}
         accountPortalUrl={vault.accountPortalUrl}
+        authBusy={vault.authBusy}
         authError={vault.authError}
         onStartAuth0={vault.startAuth0Login}
+        onStartAuth0Signup={vault.startAuth0Signup}
         onSignInWorkspace={(email) => vault.signInWorkspaceSession(email)}
         onSignOut={vault.signOut}
         onClose={() => setSsoOpen(false)}
