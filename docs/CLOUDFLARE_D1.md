@@ -76,21 +76,15 @@ npx wrangler d1 execute vzfiles_db --remote --command="SELECT name FROM sqlite_m
 
 ## Langkah 3: Hubungkan Binding `DB` ke Cloudflare Pages / Step 3: Bind `DB` to Cloudflare Pages
 
-> **PENTING / IMPORTANT:** Nama binding **harus persis `DB`** (huruf besar semua), karena kode di `functions/api/vault.ts` mengakses `context.env.DB`.
+> **PENTING / IMPORTANT:**
+> - Nama binding **harus persis `DB`** (huruf besar semua), karena kode di `functions/api/vault.ts` mengakses `context.env.DB`.
+> - Karena repository ini memiliki file **`wrangler.toml`**, Cloudflare Pages otomatis **mengunci tombol `+ Add` Bindings di Dashboard** (*"Bindings for this project are being managed through wrangler.toml"*).
 
-### Cara A — Lewat Dashboard Cloudflare Pages (Direkomendasikan jika deploy via Git Dashboard)
+### Cara A — Lewat `wrangler.toml` (Aktif / Direkomendasikan)
 
-1. Buka **Workers & Pages → `vzfiles` → Settings → Bindings** *(atau **Settings → Functions → D1 database bindings**)*.
-2. Klik **Add** → pilih **D1 database**.
-3. Isi:
-   - **Variable name:** `DB`
-   - **D1 database:** `vzfiles_db`
-4. Lakukan pada environment **Production** *(dan **Preview** jika Anda juga ingin mengetes sinkronisasi di URL preview)*.
-5. Klik **Save**, lalu **Retry deployment** (atau deploy ulang) agar binding langsung aktif pada Pages Functions.
-
-### Cara B — Lewat `wrangler.toml` (Jika deploy via CLI `wrangler pages deploy`)
-
-Buka `wrangler.toml`, lalu hapus komentar (`#`) pada bagian D1 dan masukkan `database_id` milik Anda:
+1. Buka `wrangler.toml` di root repository.
+2. Pastikan `name = "vzfiles"` sesuai dengan nama project Cloudflare Pages Anda.
+3. Hapus komentar (`#`) pada blok `[[d1_databases]]` dan isi `database_name` serta `database_id` milik Anda:
 
 ```toml
 [[d1_databases]]
@@ -98,6 +92,15 @@ binding = "DB"
 database_name = "vzfiles_db"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
+
+4. Commit dan `push` ke GitHub (`main`) — Cloudflare Pages akan otomatis mengikat database `DB` saat build berikutnya.
+
+### Cara B — Lewat Dashboard UI (Hanya jika `wrangler.toml` dihapus)
+
+Jika Anda lebih suka mengelola seluruh binding dan environment variables lewat klik di Dashboard Cloudflare Pages:
+1. Hapus `wrangler.toml` dari repo (`git rm wrangler.toml`) dan pindahkan isi `[vars]` ke **Settings → Variables and Secrets**.
+2. Setelah deploy ulang, tombol **+ Add** di **Settings → Bindings** akan aktif kembali.
+3. Klik **Add → D1 database**, isi **Variable name:** `DB`, pilih **`vzfiles_db`** pada **Production** *(dan **Preview** jika perlu)*, lalu **Save**.
 
 ---
 

@@ -73,7 +73,8 @@ npm run build
 
 | Dokumen / Document | Deskripsi (ID) | Description (EN) |
 | :--- | :--- | :--- |
-| [Panduan Cloudflare D1](./docs/CLOUDFLARE_D1.md) | Cara membuat, migrasi tabel `user_vaults`, dan menghubungkan binding `DB` di Cloudflare Pages. | How to provision, migrate `user_vaults`, and bind `DB` in Cloudflare Pages. |
+| [Panduan Cloudflare D1](./docs/CLOUDFLARE_D1.md) | Cara membuat, migrasi tabel `user_vaults`, dan menghubungkan binding `DB` lewat `wrangler.toml`. | How to provision, migrate `user_vaults`, and bind `DB` via `wrangler.toml`. |
+| [Panduan Cloudflare KV](./docs/CLOUDFLARE_KV.md) | Cara membuat KV Namespace, menghubungkan binding `PORTAL_KV` lewat `wrangler.toml`, dan verifikasi sync. | How to create a KV Namespace, bind `PORTAL_KV` via `wrangler.toml`, and verify sync. |
 | [Integrasi Auth0 SSO](./docs/AUTH0_SSO.md) | Tutorial lengkap setup tenant `galbay` (`accounts.vz.gay`) dan `@auth0/auth0-spa-js`. | Complete guide for tenant `galbay` (`accounts.vz.gay`) and `@auth0/auth0-spa-js`. |
 | [Deploy Cloudflare Pages](./docs/CLOUDFLARE_PAGES_DEPLOY.md) | Pengaturan build Pages, wildcard proxy (`_middleware.js`), dan domain kustom. | Pages build settings, wildcard proxy (`_middleware.js`), and custom domains. |
 | [API VikingFile & Arsitektur](./docs/VIKINGFILE_API.md) | Referensi endpoint `/api/viking/*`, fallback CORS relay, QR code, dan ToS/Privasi. | Reference for `/api/viking/*`, CORS relay fallback, QR code, and ToS/Privacy. |
