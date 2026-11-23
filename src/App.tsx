@@ -3,7 +3,6 @@ import { AttributionSection } from './components/AttributionSection';
 import { CheckFilePanel } from './components/CheckFilePanel';
 import { Footer } from './components/Footer';
 import { LegalModal, type LegalTab } from './components/LegalModal';
-import { SsoModal } from './components/SsoModal';
 import { SsoVaultPanel } from './components/SsoVaultPanel';
 import { TopBar, type WorkspaceTab } from './components/TopBar';
 import { TransferPanel } from './components/TransferPanel';
@@ -41,7 +40,6 @@ export default function App() {
     readInitialHashFromLocation() ? 'check' : 'transfer'
   );
 
-  const [ssoOpen, setSsoOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('tos');
 
@@ -81,9 +79,12 @@ export default function App() {
         lang={lang}
         activeTab={activeTab}
         session={vault.session}
+        accountPortalUrl={vault.accountPortalUrl}
+        authBusy={vault.authBusy}
         onSelectTab={setActiveTab}
         onOpenLegal={() => handleOpenLegal('tos')}
-        onOpenSso={() => setSsoOpen(true)}
+        onSignIn={vault.signIn}
+        onSignOut={vault.signOut}
       />
 
       <main className="flex-1">
@@ -104,7 +105,7 @@ export default function App() {
               profiles={vault.profiles}
               activeProfile={vault.activeProfile}
               onSelectProfileId={vault.setActiveProfileId}
-              onOpenSso={() => setSsoOpen(true)}
+              onSignIn={vault.signIn}
               onOpenLegal={() => handleOpenLegal('tos')}
               onInspectHash={handleInspectHash}
               history={history}
@@ -129,7 +130,7 @@ export default function App() {
               syncStatus={vault.syncStatus}
               profiles={vault.profiles}
               activeProfile={vault.activeProfile}
-              onOpenSso={() => setSsoOpen(true)}
+              onSignIn={vault.signIn}
               onAddProfile={vault.addHashProfile}
               onRemoveProfile={vault.removeHashProfile}
               onSetActiveProfile={vault.setActiveProfileId}
@@ -142,22 +143,6 @@ export default function App() {
       </main>
 
       <Footer lang={lang} onOpenLegal={handleOpenLegal} />
-
-      <SsoModal
-        isOpen={ssoOpen}
-        lang={lang}
-        session={vault.session}
-        auth0Domain={vault.auth0Domain}
-        auth0ClientId={vault.auth0ClientId}
-        accountPortalUrl={vault.accountPortalUrl}
-        authBusy={vault.authBusy}
-        authError={vault.authError}
-        onStartAuth0={vault.startAuth0Login}
-        onStartAuth0Signup={vault.startAuth0Signup}
-        onSignInWorkspace={(email) => vault.signInWorkspaceSession(email)}
-        onSignOut={vault.signOut}
-        onClose={() => setSsoOpen(false)}
-      />
 
       <LegalModal
         isOpen={legalOpen}

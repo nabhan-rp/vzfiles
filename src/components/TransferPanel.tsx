@@ -30,7 +30,7 @@ interface TransferPanelProps {
   profiles: VikingHashProfile[];
   activeProfile: VikingHashProfile | null;
   onSelectProfileId: (id: string | null) => void;
-  onOpenSso: () => void;
+  onSignIn: () => void | Promise<void>;
   onOpenLegal: () => void;
   onInspectHash: (hash: string) => void;
   history: LocalTransferRecord[];
@@ -45,7 +45,7 @@ export function TransferPanel({
   profiles,
   activeProfile,
   onSelectProfileId,
-  onOpenSso,
+  onSignIn,
   onOpenLegal,
   onInspectHash,
   history,
@@ -256,7 +256,7 @@ export function TransferPanel({
             {!session && (
               <button
                 type="button"
-                onClick={onOpenSso}
+                onClick={() => void onSignIn()}
                 className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap cursor-pointer"
               >
                 {UI_COPY[lang].nav.signIn}
@@ -484,9 +484,7 @@ export function TransferPanel({
                   <span className="font-medium text-slate-800 dark:text-slate-200">
                     {progress.phase === 'preparing' && t.preparingStatus}
                     {progress.phase === 'uploading' &&
-                      `${t.uploadingStatus} ${progress.currentPart}/${progress.totalParts} (${
-                        progress.transport === 'relay' ? t.relayBadge : t.directBadge
-                      })`}
+                      `${t.uploadingStatus} ${progress.currentPart}/${progress.totalParts}`}
                     {progress.phase === 'completing' && t.completingStatus}
                   </span>
                   <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">

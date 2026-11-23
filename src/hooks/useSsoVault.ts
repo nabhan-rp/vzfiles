@@ -6,7 +6,6 @@ export interface SsoSession {
   sub: string;
   name: string;
   email: string;
-  mode: 'auth0' | 'workspace';
   signedInAt: string;
 }
 
@@ -71,21 +70,16 @@ function mergeProfiles(
 
 export function useSsoVault() {
   const {
-    isLoading: auth0Loading,
+    isLoading: authLoading,
     isAuthenticated,
     user,
-    error: auth0Error,
+    error: authErrorObj,
     loginWithRedirect,
     logout,
     getAccessTokenSilently,
   } = useAuth0();
 
-  const {
-    domain: auth0Domain,
-    clientId: auth0ClientId,
-    redirectUri,
-    accountPortalUrl,
-  } = getAuth0Config();
+  const { redirectUri, accountPortalUrl } = getAuth0Config();
 
   const [store, setStore] = useState<VaultStore>(() => readVault());
   const [syncStatus, setSyncStatus] = useState<VaultSyncStatus>('local');
@@ -170,14 +164,13 @@ export function useSsoVault() {
     [getAccessTokenSilently, isAuthenticated]
   );
 
-  // Sync Auth0 React SDK state with local vault session and Cloudflare D1/KV
   useEffect(() => {
-    if (auth0Loading) return;
+    if (authLoading) return;
 
     if (isAuthenticated && user?.sub) {
       const sub = user.sub;
       setStore((prev) => {
-        if (prev.session?.sub === sub && prev.session?.mode === 'auth0') {
+        if (prev.session?.sub === sub) {
           return prev;
         }
         return {
@@ -186,7 +179,6 @@ export function useSsoVault() {
             sub,
             name: user.name || user.nickname || user.email || 'VZ Member',
             email: user.email || '',
-            mode: 'auth0',
             signedInAt: new Date().toISOString(),
           },
         };
@@ -199,14 +191,9 @@ export function useSsoVault() {
     } else {
       syncedSubRef.current = null;
       initialSyncDoneRef.current = false;
-      setStore((prev) => {
-        if (prev.session?.mode === 'auth0') {
-          return { ...prev, session: null };
-        }
-        return prev;
-      });
+      setStore((prev) => (prev.session ? { ...prev, session: null } : prev));
     }
-  }, [auth0Loading, isAuthenticated, user, syncPullFromCloud]);
+  }, [authLoading, isAuthenticated, user, syncPullFromCloud]);
 
   const buildReturnTo = () => {
     if (typeof window === 'undefined') return '/';
@@ -214,7 +201,7 @@ export function useSsoVault() {
     return `${path}${window.location.search}`;
   };
 
-  const startAuth0Login = useCallback(async () => {
+  const signIn = useCallback(async () => {
     await loginWithRedirect({
       authorizationParams: {
         redirect_uri: redirectUri,
@@ -223,56 +210,20 @@ export function useSsoVault() {
         returnTo: buildReturnTo(),
       },
     });
-    return true;
   }, [loginWithRedirect, redirectUri]);
-
-  const startAuth0Signup = useCallback(async () => {
-    await loginWithRedirect({
-      authorizationParams: {
-        redirect_uri: redirectUri,
-        screen_hint: 'signup',
-      },
-      appState: {
-        returnTo: buildReturnTo(),
-      },
-    });
-    return true;
-  }, [loginWithRedirect, redirectUri]);
-
-  const signInWorkspaceSession = useCallback((identifier: string, displayName?: string) => {
-    const cleanId = identifier.trim().toLowerCase();
-    if (!cleanId) return;
-    const sub = `vz-workspace:${cleanId}`;
-    const derivedName = displayName?.trim() || cleanId.split('@')[0] || cleanId;
-
-    setStore((prev) => ({
-      ...prev,
-      session: {
-        sub,
-        name: derivedName,
-        email: cleanId.includes('@') ? cleanId : `${cleanId}@vz.gay`,
-        mode: 'workspace',
-        signedInAt: new Date().toISOString(),
-      },
-    }));
-    setSyncStatus('local');
-  }, []);
 
   const signOut = useCallback(async () => {
-    const currentMode = store.session?.mode;
     setStore((prev) => ({ ...prev, session: null }));
     setSyncStatus('local');
     syncedSubRef.current = null;
     initialSyncDoneRef.current = false;
 
-    if (currentMode === 'auth0' || isAuthenticated) {
-      await logout({
-        logoutParams: {
-          returnTo: redirectUri,
-        },
-      });
-    }
-  }, [isAuthenticated, logout, redirectUri, store.session?.mode]);
+    await logout({
+      logoutParams: {
+        returnTo: redirectUri,
+      },
+    });
+  }, [logout, redirectUri]);
 
   const currentSub = store.session?.sub || null;
   const profiles: VikingHashProfile[] = currentSub ? store.profilesBySub[currentSub] || [] : [];
@@ -297,7 +248,7 @@ export function useSsoVault() {
       setStore((prev) => {
         const existing = prev.profilesBySub[currentSub] || [];
         const nextProfiles = [newProfile, ...existing];
-        if (prev.session?.mode === 'auth0') {
+        if (isAuthenticated) {
           void syncPushToCloud(nextProfiles, newProfile.id);
         }
         return {
@@ -313,7 +264,7 @@ export function useSsoVault() {
         };
       });
     },
-    [currentSub, syncPushToCloud]
+    [currentSub, isAuthenticated, syncPushToCloud]
   );
 
   const removeHashProfile = useCallback(
@@ -324,7 +275,7 @@ export function useSsoVault() {
         const currentActive = prev.activeProfileBySub[currentSub];
         const nextActive =
           currentActive === id ? (filtered[0]?.id ?? null) : (currentActive ?? null);
-        if (prev.session?.mode === 'auth0') {
+        if (isAuthenticated) {
           void syncPushToCloud(filtered, nextActive);
         }
         return {
@@ -340,7 +291,7 @@ export function useSsoVault() {
         };
       });
     },
-    [currentSub, syncPushToCloud]
+    [currentSub, isAuthenticated, syncPushToCloud]
   );
 
   const setActiveProfileId = useCallback(
@@ -348,7 +299,7 @@ export function useSsoVault() {
       if (!currentSub) return;
       setStore((prev) => {
         const currentProfiles = prev.profilesBySub[currentSub] || [];
-        if (prev.session?.mode === 'auth0' && initialSyncDoneRef.current) {
+        if (isAuthenticated && initialSyncDoneRef.current) {
           void syncPushToCloud(currentProfiles, id);
         }
         return {
@@ -360,7 +311,7 @@ export function useSsoVault() {
         };
       });
     },
-    [currentSub, syncPushToCloud]
+    [currentSub, isAuthenticated, syncPushToCloud]
   );
 
   return {
@@ -368,15 +319,11 @@ export function useSsoVault() {
     profiles,
     activeProfile,
     activeProfileId,
-    auth0Domain,
-    auth0ClientId,
     accountPortalUrl,
-    authBusy: auth0Loading,
-    authError: auth0Error?.message || null,
+    authBusy: authLoading,
+    authError: authErrorObj?.message || null,
     syncStatus,
-    startAuth0Login,
-    startAuth0Signup,
-    signInWorkspaceSession,
+    signIn,
     signOut,
     addHashProfile,
     removeHashProfile,

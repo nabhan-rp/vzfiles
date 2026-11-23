@@ -29,7 +29,7 @@ interface SsoVaultPanelProps {
   syncStatus: VaultSyncStatus;
   profiles: VikingHashProfile[];
   activeProfile: VikingHashProfile | null;
-  onOpenSso: () => void;
+  onSignIn: () => void | Promise<void>;
   onAddProfile: (input: { label: string; userHash: string; defaultPath?: string }) => void;
   onRemoveProfile: (id: string) => void;
   onSetActiveProfile: (id: string | null) => void;
@@ -42,7 +42,7 @@ export function SsoVaultPanel({
   syncStatus,
   profiles,
   activeProfile,
-  onOpenSso,
+  onSignIn,
   onAddProfile,
   onRemoveProfile,
   onSetActiveProfile,
@@ -171,7 +171,7 @@ export function SsoVaultPanel({
         </p>
         <button
           type="button"
-          onClick={onOpenSso}
+          onClick={() => void onSignIn()}
           className="mt-6 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors cursor-pointer"
         >
           {t.signInCta}
