@@ -1,0 +1,1210 @@
+
+Gemini
+Percakapan baru
+Koleksi
+Gambar
+Dijadwalkan
+Pelajar
+
+Selengkapnya
+Notebook baru
+Epistemology and Cultural Hegemony in PMII Student Resistance
+Museum and Tourism: Indonesian Cultural Landscapes and Management Challenges
+Untitled notebook
+Semua notebook
+Perbedaan Cinta Berantai dan Nikung
+Transisi UNUL dari Python ke Bahasa C
+Wildcard Subdomain Pages Cloudflare Worker
+Panduan Custom Domain Auth0
+Nama Aplikasi LMS Serverless Modern
+API Search Engine untuk Custom Domain
+Arsitektur SaaS Website Builder Cloudflare Workers
+Estimasi Waktu Download 38GB
+Cara Mengatasi Error SSL Marimenulis
+Mengatasi SSL Error Cloudflare Subdomain
+Draf Bandel Support Spaceship Akun Ditangguhkan
+Situs Grafik USD ke IDR Real-Time
+Pertanyaan Tanpa Konteks
+Perbandingan Ketiga Hal
+Syarat Penggunaan Metode Stabil
+Zodiak Bulan Februari
+Batasan Deteksi Privasi WhatsApp Baileys
+Layanan Email Routing Cloudflare
+Alasan Google Pakai 'Accounts'
+Panduan Biaya Cloudflare Workers Paid
+Deploy Aplikasi TSX ke Cloudflare Workers
+Percakapan dengan Gemini
+cara membuat *.vz.gay di cloudflare pages supaya tidak menghabiskan kuota 200 dns zone 1 per 1
+
+Cloudflare Pages secara bawaan tidak mendukung wildcard custom domain (*.vz.gay) di menu Custom Domains, serta membatasi maksimal 100 custom domain per project (di samping limit record DNS zona). Jika Anda hanya membuat record CNAME * langsung ke *.pages.dev, Cloudflare Pages akan menolak request dengan error karena header Host tidak terdaftar.
+
+Solusi paling efisien agar hanya memakai 1 DNS record untuk subdomain tak terbatas adalah menggabungkan 1 Wildcard DNS Record (*) dengan Cloudflare Workers sebagai reverse proxy.
+
+1. Buat 1 Wildcard Record di Cloudflare DNS
+Masuk ke dashboard zona vz.gay > DNS > Records, lalu tambahkan satu record saja:
+
+Type: AAAA
+
+Name: *
+
+IPv6 address: 100:: (alamat discard standar Cloudflare untuk trafik yang ditangani Worker)
+
+Proxy status: Proxied (Awan Oranye) — wajib aktif agar sertifikat Universal SSL *.vz.gay otomatis melayani semua subdomain.
+
+Catatan Prioritas DNS: Record spesifik yang sudah ada (misalnya account.vz.gay atau api.vz.gay) tetap aman dan tidak akan tertimpa, karena Cloudflare selalu memprioritaskan exact match sebelum wildcard *.
+
+2. Buat Cloudflare Worker untuk Rewrite Host
+Buka Workers & Pages > Create > Create Worker, beri nama (misalnya vz-wildcard-proxy), lalu gunakan kode berikut agar setiap request ke *.vz.gay diteruskan ke deployment Pages Anda sambil tetap membawa identitas subdomain aslinya melalui header X-Forwarded-Host:
+
+JavaScript
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const originalHost = url.hostname; // contoh: tenant1.vz.gay
+
+    // Ganti hostname tujuan ke domain default Cloudflare Pages Anda
+    url.hostname = "nama-project-anda.pages.dev";
+
+    // Salin header asli dan sisipkan identitas subdomain asli
+    const headers = new Headers(request.headers);
+    headers.set("X-Forwarded-Host", originalHost);
+    headers.set("X-Original-Host", originalHost);
+
+    const modifiedRequest = new Request(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.body,
+      redirect: "manual",
+    });
+
+    return fetch(modifiedRequest);
+  },
+};
+Verifikasi: Klik Deploy, lalu buka URL *.workers.dev bawaan Worker tersebut; halaman dari nama-project-anda.pages.dev harus tampil normal.
+
+3. Hubungkan Worker ke Route *.vz.gay/*
+Buka Worker vz-wildcard-proxy > Settings > Domains & Routes.
+
+Klik Add > Route.
+
+Masukkan konfigurasi berikut:
+
+Route: *.vz.gay/*
+
+Zone: vz.gay
+
+Klik Add route.
+
+Verifikasi: Akses subdomain acak seperti [https://tes123.vz.gay](https://tes123.vz.gay). Sertifikat SSL akan valid secara otomatis dan halaman Pages langsung termuat tanpa perlu menambah DNS record baru lagi.
+
+Cara Membaca Subdomain di Aplikasi Pages (Multi-Tenant)
+Karena header Host yang diterima Pages berubah menjadi *.pages.dev, baca subdomain aktif di sisi frontend maupun Pages Functions/Middleware menggunakan header X-Forwarded-Host:
+
+JavaScript
+// Contoh di Pages Functions / Middleware / SSR
+const host = request.headers.get("X-Forwarded-Host") || request.headers.get("Host");
+const subdomain = host.replace(".vz.gay", ""); // hasil: "tes123"
+(Jika aplikasi Pages Anda murni static SPA/CSR tanpa SSR, Anda tidak perlu membaca header tersebut—cukup baca langsung dari window.location.hostname di browser karena URL di address bar pengguna tetap tes123.vz.gay.)
+
+export default {
+
+async fetch(request) {
+
+const url = new URL(request.url);
+
+const originalHost = url.hostname; // contoh: tenant1.vz.gay
+
+
+
+// Ganti hostname tujuan ke domain default Cloudflare Pages Anda
+
+url.hostname = "nama-project-anda.pages.dev";
+
+
+
+// Salin header asli dan sisipkan identitas subdomain asli
+
+const headers = new Headers(request.headers);
+
+headers.set("X-Forwarded-Host", originalHost);
+
+headers.set("X-Original-Host", originalHost);
+
+
+
+const modifiedRequest = new Request(url.toString(), {
+
+method: request.method,
+
+headers: headers,
+
+body: request.body,
+
+redirect: "manual",
+
+});
+
+
+
+return fetch(modifiedRequest);
+
+},
+
+};
+
+ini kodenya hanya ini saja? ini ditempatkan di bagian mana?
+
+Ya, kodenya hanya itu saja—sudah utuh dan siap jalan tanpa perlu library tambahan.
+
+Anda bisa menempatkannya melalui salah satu dari dua cara berikut:
+
+Cara 1: Langsung via Dashboard Cloudflare (Paling Cepat)
+Buka dashboard Cloudflare > pilih Workers & Pages di sidebar kiri.
+
+Klik Create > pilih tab Workers > klik Create Worker (atau Start with Hello World!).
+
+Beri nama Worker (misal vz-wildcard-proxy), lalu klik Deploy.
+
+Setelah ter-deploy, klik tombol Edit code di pojok kanan atas.
+
+Di panel editor sebelah kiri, pastikan file yang terbuka adalah worker.js (atau index.js), hapus seluruh isi bawaannya, lalu tempel (paste) kode tersebut dan ganti "nama-project-anda.pages.dev" dengan domain .pages.dev milik Anda.
+
+Klik Deploy lagi di pojok kanan atas untuk menyimpan perubahan.
+
+Cara 2: Via Wrangler CLI (Jika Pakai Git / Terminal)
+Jika Anda mengelola Worker lewat project lokal:
+
+Buat project baru dengan npm create cloudflare@latest vz-wildcard-proxy (pilih template Hello World Worker).
+
+Buka file src/index.js (atau src/index.ts), ganti seluruh isinya dengan kode di atas.
+
+Jalankan npx wrangler deploy.
+
+Satu Detail Tambahan pada Kode (Opsional tapi Penting)
+Pada baris redirect: "manual", jika project Pages Anda melakukan redirect (misalnya redirect /about ke /about/ atau trailing slash), browser akan menerima header Location yang mengarah ke nama-project-anda.pages.dev jika tidak ditulis ulang. Agar URL di browser tetap bertahan di *.vz.gay saat terjadi redirect, Anda bisa sedikit menyempurnakan bagian akhir return menjadi:
+
+JavaScript
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const originalHost = url.hostname;
+    const pagesHost = "nama-project-anda.pages.dev";
+
+    url.hostname = pagesHost;
+
+    const headers = new Headers(request.headers);
+    headers.set("X-Forwarded-Host", originalHost);
+    headers.set("X-Original-Host", originalHost);
+
+    const response = await fetch(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.body,
+      redirect: "manual",
+    });
+
+    // Pastikan header Location saat redirect tetap memakai subdomain *.vz.gay
+    const newHeaders = new Headers(response.headers);
+    const location = newHeaders.get("Location");
+    if (location && location.includes(pagesHost)) {
+      newHeaders.set("Location", location.replace(pagesHost, originalHost));
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  },
+};
+export default {
+
+async fetch(request) {
+
+const url = new URL(request.url);
+
+const originalHost = url.hostname;
+
+const pagesHost = "nama-project-anda.pages.dev";
+
+
+
+url.hostname = pagesHost;
+
+
+
+const headers = new Headers(request.headers);
+
+headers.set("X-Forwarded-Host", originalHost);
+
+headers.set("X-Original-Host", originalHost);
+
+
+
+const response = await fetch(url.toString(), {
+
+method: request.method,
+
+headers: headers,
+
+body: request.body,
+
+redirect: "manual",
+
+});
+
+
+
+// Pastikan header Location saat redirect tetap memakai subdomain *.vz.gay
+
+const newHeaders = new Headers(response.headers);
+
+const location = newHeaders.get("Location");
+
+if (location && location.includes(pagesHost)) {
+
+newHeaders.set("Location", location.replace(pagesHost, originalHost));
+
+}
+
+
+
+return new Response(response.body, {
+
+status: response.status,
+
+statusText: response.statusText,
+
+headers: newHeaders,
+
+});
+
+},
+
+};
+
+
+
+itu url pages tujuan atau worker tujuan / worker tempat dihostingnya reverse proxy ini ? const pagesHost = "nama-project-anda.pages.dev";
+
+Itu adalah URL project Cloudflare Pages tujuan (tempat aplikasi/website utama Anda di-hosting), bukan URL Worker tempat script reverse proxy ini berada.
+
+Alur trafiknya berjalan seperti ini:
+
+Plaintext
+Pengunjung (tenant.vz.gay)
+       │
+       ▼  (ditangkap oleh Route *.vz.gay/*)
+Worker Reverse Proxy (tempat kode ini dipasang)
+       │
+       ▼  (diteruskan ke pagesHost)
+Cloudflare Pages Tujuan (nama-project-anda.pages.dev)
+Poin Penting:
+Jangan isi dengan URL Worker proxy ini sendiri (maupun domain *.vz.gay), karena akan memicu infinite loop (Worker memanggil dirinya sendiri terus-menerus) dan menghasilkan error dari Cloudflare.
+
+Jika tujuannya adalah Worker lain (bukan Pages): Anda juga bisa mengisinya dengan domain *.workers.dev milik Worker target lain tersebut, asalkan bukan Worker proxy ini.
+
+Cek di dashboard Pages Anda: Buka Workers & Pages > pilih project Pages Anda, lalu salin domain default yang berakhiran .pages.dev di bagian atas (tanpa https:// dan tanpa garis miring / di akhir) untuk diisikan ke pagesHost.
+
+kalau ada banyak berarti 1 per 1 ditambahkan?
+
+Tergantung arsitektur project Anda, ada dua skenario—dan di keduanya Anda tetap hanya butuh 1 DNS record (*) serta 1 Worker yang sama:
+
+Skenario 1: Satu Project Pages untuk Banyak Subdomain (Multi-Tenant)
+Jika semua subdomain (user1.vz.gay, user2.vz.gay, dst.) mengarah ke 1 aplikasi Pages yang sama, tidak perlu ditambahkan 1 per 1 sama sekali. Kode sebelumnya sudah otomatis meneruskan tak terbatas subdomain tanpa menyentuh dashboard Cloudflare lagi.
+
+Skenario 2: Banyak Project Pages / Workers yang Berbeda
+Jika tiap subdomain punya project .pages.dev atau .workers.dev yang berbeda (misalnya ai.vz.gay ke project A, nic.vz.gay ke project B, dan sisanya ke project utama), Anda tidak perlu membuat Worker baru atau DNS baru 1 per 1.
+
+Cukup daftarkan daftar tujuan (routing map) di dalam 1 Worker proxy yang sama:
+
+JavaScript
+// Daftar mapping subdomain khusus -> target Pages/Worker masing-masing
+const ROUTES = {
+  "ai.vz.gay": "project-ai.pages.dev",
+  "nic.vz.gay": "project-nic.pages.dev",
+  "platform.vz.gay": "project-platform.pages.dev",
+};
+
+// Tujuan default untuk semua subdomain lainnya (*.vz.gay)
+const DEFAULT_TARGET = "project-utama.pages.dev";
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const originalHost = url.hostname;
+
+    // Pilih target berdasarkan subdomain, atau pakai default jika tidak ada di daftar
+    const targetHost = ROUTES[originalHost] || DEFAULT_TARGET;
+    url.hostname = targetHost;
+
+    const headers = new Headers(request.headers);
+    headers.set("X-Forwarded-Host", originalHost);
+    headers.set("X-Original-Host", originalHost);
+
+    const response = await fetch(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.body,
+      redirect: "manual",
+    });
+
+    const newHeaders = new Headers(response.headers);
+    const location = newHeaders.get("Location");
+    if (location && location.includes(targetHost)) {
+      newHeaders.set("Location", location.replace(targetHost, originalHost));
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  },
+};
+Dengan pola ini:
+
+Kuota 200 DNS record aman (tetap terpakai 1 record *).
+
+Limit 100 custom domain per project Pages terlewati.
+
+Jika nanti ada project baru lagi, Anda cukup menambah 1 baris di objek ROUTES lalu klik Deploy—atau bahkan bisa menyimpan daftar ROUTES tersebut di Cloudflare KV / D1 jika jumlah project-nya nanti mencapai ratusan agar tidak perlu edit kode setiap kali menambah project.
+
+beberapa subdomin di 1 worker/pages, dan punya banyak worker/pages, misal file.vz.gay dan files.vz.gay di 1 pages, dan myaccount.vz.gay di yang lain
+
+Anda bisa mengelompokkan daftar subdomain berdasarkan target Pages/Worker-nya, lalu mengubahnya menjadi lookup map otomatis di luar fungsi fetch (agar cepat dan tidak dihitung ulang setiap ada request).
+
+Dengan struktur ini, Anda cukup menaruh file.vz.gay dan files.vz.gay dalam satu grup yang sama:
+
+JavaScript
+// 1. Kelompokkan subdomain berdasarkan project Pages/Worker tujuan
+const TARGET_GROUPS = {
+  "project-files.pages.dev": [
+    "file.vz.gay",
+    "files.vz.gay",
+  ],
+  "project-account.pages.dev": [
+    "myaccount.vz.gay",
+    "account.vz.gay",
+  ],
+  "worker-api.akun-anda.workers.dev": [
+    "api.vz.gay",
+  ],
+};
+
+// Tujuan cadangan jika subdomain tidak ada di daftar atas (opsional)
+const DEFAULT_TARGET = "project-utama.pages.dev";
+
+// Ubah grup di atas menjadi map { "file.vz.gay": "project-files.pages.dev", ... }
+const HOST_MAP = Object.entries(TARGET_GROUPS).reduce((acc, [target, hosts]) => {
+  for (const host of hosts) {
+    acc[host] = target;
+  }
+  return acc;
+}, {});
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const originalHost = url.hostname;
+
+    // Cari target yang cocok; pakai DEFAULT_TARGET jika tidak terdaftar
+    const targetHost = HOST_MAP[originalHost] || DEFAULT_TARGET;
+
+    // (Opsional) Jika tidak ingin ada fallback dan mau langsung 404 untuk subdomain liar:
+    // if (!HOST_MAP[originalHost]) return new Response("Subdomain not found", { status: 404 });
+
+    url.hostname = targetHost;
+
+    const headers = new Headers(request.headers);
+    headers.set("X-Forwarded-Host", originalHost);
+    headers.set("X-Original-Host", originalHost);
+
+    const response = await fetch(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.body,
+      redirect: "manual",
+    });
+
+    // Tulis ulang header Location agar redirect tetap bertahan di *.vz.gay
+    const newHeaders = new Headers(response.headers);
+    const location = newHeaders.get("Location");
+    if (location && location.includes(targetHost)) {
+      newHeaders.set("Location", location.replace(targetHost, originalHost));
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  },
+};
+Keuntungan Pola Ini
+Rapi saat skala membesar: Jika nanti ada 5 subdomain mengarah ke satu project Pages yang sama, Anda cukup menambahkannya ke dalam array [ ... ] di bawah project tersebut tanpa menulis ulang alamat .pages.dev-nya berkali-kali.
+
+Campur Pages & Workers: Dalam satu konfigurasi TARGET_GROUPS yang sama, Anda bisa mengarahkan sebagian subdomain ke .pages.dev dan sebagian lainnya ke .workers.dev secara bersamaan.
+
+Zero-overhead: Proses pembuatan HOST_MAP berjalan di tingkat modul (hanya sekali saat Worker cold start), sehingga pencarian rute tiap request berjalan instan (O(1)).
+
+tidak bisa pakai set defaut, karena konsepnya itu bukan hanya untuk 1 worker saja
+
+Benar—jika *.vz.gay dipakai bersama oleh banyak Worker dan service yang berdiri sendiri, DEFAULT_TARGET harus dihapus agar tidak membajak subdomain lain yang bukan milik proxy ini.
+
+Cukup hapus DEFAULT_TARGET dan kembalikan 404 untuk subdomain yang tidak terdaftar di router ini:
+
+JavaScript
+// Khusus untuk project Cloudflare Pages yang butuh rewrite Host
+const TARGET_GROUPS = {
+  "project-files.pages.dev": [
+    "file.vz.gay",
+    "files.vz.gay",
+  ],
+  "project-account.pages.dev": [
+    "myaccount.vz.gay",
+    "account.vz.gay",
+  ],
+};
+
+const HOST_MAP = Object.entries(TARGET_GROUPS).reduce((acc, [target, hosts]) => {
+  for (const host of hosts) {
+    acc[host] = target;
+  }
+  return acc;
+}, {});
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const originalHost = url.hostname;
+    const targetHost = HOST_MAP[originalHost];
+
+    // Jangan lempar ke default; langsung 404 jika bukan milik proxy Pages ini
+    if (!targetHost) {
+      return new Response("Subdomain not configured", { status: 404 });
+    }
+
+    url.hostname = targetHost;
+
+    const headers = new Headers(request.headers);
+    headers.set("X-Forwarded-Host", originalHost);
+    headers.set("X-Original-Host", originalHost);
+
+    const response = await fetch(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.body,
+      redirect: "manual",
+    });
+
+    const newHeaders = new Headers(response.headers);
+    const location = newHeaders.get("Location");
+    if (location && location.includes(targetHost)) {
+      newHeaders.set("Location", location.replace(targetHost, originalHost));
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  },
+};
+Cara Menggabungkan Banyak Worker Tanpa Memakan Kuota 200 DNS
+Di Cloudflare, Worker Routes tidak dihitung ke dalam kuota 200 DNS record (kuota route per zona jauh lebih besar, hingga 1.000 route). Dengan 1 DNS record * (AAAA 100:: Proxied), Anda bisa membagi trafik seperti ini:
+
+Untuk target berupa Worker lain (Langsung, tanpa lewat proxy):
+
+Jangan masukkan ke TARGET_GROUPS di atas.
+
+Buka Worker tujuan tersebut > Settings > Domains & Routes > Add > Route, lalu isi route spesifiknya (misal api.vz.gay/* atau bot.vz.gay/*).
+
+Cloudflare selalu memprioritaskan route spesifik (api.vz.gay/*) daripada route wildcard (*.vz.gay/*), sehingga trafik langsung masuk ke Worker tujuan tanpa lewat proxy dan tanpa menambah DNS record baru.
+
+Untuk target berupa Cloudflare Pages (Lewat Worker proxy ini):
+
+Masukkan ke dalam TARGET_GROUPS pada kode di atas (karena Pages tidak bisa dipasang ke Worker Route langsung dan wajib menerima header Host berakhiran .pages.dev).
+
+Worker ini tetap memegang route sapu jagat *.vz.gay/* untuk menangani seluruh subdomain Pages sekaligus.
+
+Untuk subdomain dengan DNS record spesifik (misal CNAME eksternal / VPS):
+
+Jika Anda memang membuat DNS record spesifik (seperti vps.vz.gay), ganti baris return new Response("Subdomain not configured", { status: 404 }); menjadi return fetch(request); agar Worker meneruskan request tersebut ke server origin asli yang tercatat di DNS.
+
+Nabhanraflipratama.1704@gmail.com's Account
+
+Account home
+
+
+
+Recents
+
+
+
+Domains
+
+
+
+Observability
+
+Build
+
+
+
+Compute
+
+Workers & Pages
+
+Observability
+
+Workers for Platforms
+
+Containers
+
+Durable Objects
+
+Queues
+
+Workflows
+
+Browser Run
+
+VPC
+
+
+
+Email Service
+
+Workers plans
+
+Flagship
+
+
+
+AI
+
+
+
+Storage & databases
+
+
+
+Images & Stream
+
+
+
+Realtime
+
+Protect & connect
+
+
+
+Application security
+
+
+
+Zero Trust
+
+
+
+Networking
+
+
+
+Threats & defense
+
+
+
+Monetize
+
+
+
+Delivery & performance
+
+Manage account
+
+
+
+Abuse & enforcement
+
+Settings
+
+
+
+Support
+
+Support
+
+System status
+
+Careers
+
+Terms of Use
+
+Report Security Issues
+
+Privacy Policy
+
+A blue and white pill with a checkmark and an x, representing privacy choicesCookie Preferences
+
+© 2026 Cloudflare, Inc.
+
+
+
+Nabhanraflipratama.1704@gmail.com's Account
+
+Create an app
+
+Select a method
+
+Deploy Worker
+
+Make something new
+
+Start from a template, connect a repository, or upload your code.
+
+
+
+
+
+Continue with GitHub
+
+
+
+Connect with GitLab
+
+
+
+Start with Hello World!
+
+
+
+Select a template
+
+
+
+Upload your static files
+
+Need to use the legacy Pages workflow? Continue to Pages
+
+
+
+Deploy Hello World
+
+A simple Worker that returns 'Hello World!'. Perfect for getting started.
+
+
+
+Worker name
+
+Available
+
+vz-wildcard-proxy
+
+Worker preview
+
+/**
+
+* Welcome to Cloudflare Workers! This is your first worker.
+
+*
+
+* - Run "npm run dev" in your terminal to start a development server
+
+* - Open a browser tab at http://localhost:8787/ to see your worker in action
+
+* - Run "npm run deploy" to publish your worker
+
+*
+
+* Learn more at https://developers.cloudflare.com/workers/
+
+*/
+
+
+
+export default {
+
+async fetch(request, env, ctx) {
+
+// You can view your logs in the Observability dashboard
+
+console.info({ message: 'Hello World Worker received a request!' });
+
+return new Response('Hello World!');
+
+}
+
+};
+
+Protect with Cloudflare Access
+
+
+
+kode apa yang harus dimasukkan/diganti menggantikan hello world?
+
+Pada halaman Deploy Hello World yang sedang Anda buka saat ini, kotak Worker preview biasanya belum bisa diedit langsung. Klik tombol Deploy terlebih dahulu, lalu di halaman berikutnya klik Edit code di pojok kanan atas.
+
+Setelah editor terbuka (worker.js), hapus seluruh kode Hello World dan ganti semuanya dengan kode berikut:
+
+JavaScript
+// Daftarkan project Cloudflare Pages tujuan beserta daftar subdomain-nya
+const TARGET_GROUPS = {
+  "ganti-nama-project-files.pages.dev": [
+    "file.vz.gay",
+    "files.vz.gay",
+  ],
+  "ganti-nama-project-account.pages.dev": [
+    "myaccount.vz.gay",
+  ],
+};
+
+// Otomatis memetakan tiap subdomain ke target .pages.dev masing-masing
+const HOST_MAP = Object.entries(TARGET_GROUPS).reduce((acc, [target, hosts]) => {
+  for (const host of hosts) {
+    acc[host] = target;
+  }
+  return acc;
+}, {});
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const originalHost = url.hostname;
+    const targetHost = HOST_MAP[originalHost];
+
+    // Jika subdomain tidak ada di daftar atas, teruskan apa adanya ke DNS/route aslinya
+    // (Ganti baris ini menjadi `return new Response("Not Found", { status: 404 });` jika ingin memblokir subdomain tak terdaftar)
+    if (!targetHost) {
+      return fetch(request);
+    }
+
+    url.hostname = targetHost;
+
+    const headers = new Headers(request.headers);
+    headers.set("X-Forwarded-Host", originalHost);
+    headers.set("X-Original-Host", originalHost);
+
+    const response = await fetch(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.body,
+      redirect: "manual",
+    });
+
+    // Pastikan redirect (301/302) tetap memakai subdomain *.vz.gay, bukan *.pages.dev
+    const newHeaders = new Headers(response.headers);
+    const location = newHeaders.get("Location");
+    if (location && location.includes(targetHost)) {
+      newHeaders.set("Location", location.replace(targetHost, originalHost));
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  },
+};
+Langkah Setelah Paste Kode:
+Ganti "ganti-nama-project-files.pages.dev" dan "ganti-nama-project-account.pages.dev" dengan URL .pages.dev asli milik Anda (tambah atau kurangi grup sesuai kebutuhan).
+
+Klik Deploy di pojok kanan atas editor.
+
+Kembali ke halaman detail Worker vz-wildcard-proxy > buka tab Settings > Domains & Routes > klik Add > Route, lalu masukkan:
+
+Route: *.vz.gay/*
+
+Zone: vz.gay
+
+// Daftarkan project Cloudflare Pages tujuan beserta daftar subdomain-nya
+
+const TARGET_GROUPS = {
+
+"ganti-nama-project-files.pages.dev": [
+
+"file.vz.gay",
+
+"files.vz.gay",
+
+],
+
+"ganti-nama-project-account.pages.dev": [
+
+"myaccount.vz.gay",
+
+],
+
+};
+
+
+
+// Otomatis memetakan tiap subdomain ke target .pages.dev masing-masing
+
+const HOST_MAP = Object.entries(TARGET_GROUPS).reduce((acc, [target, hosts]) => {
+
+for (const host of hosts) {
+
+acc[host] = target;
+
+}
+
+return acc;
+
+}, {});
+
+
+
+export default {
+
+async fetch(request) {
+
+const url = new URL(request.url);
+
+const originalHost = url.hostname;
+
+const targetHost = HOST_MAP[originalHost];
+
+
+
+// Jika subdomain tidak ada di daftar atas, teruskan apa adanya ke DNS/route aslinya
+
+// (Ganti baris ini menjadi `return new Response("Not Found", { status: 404 });` jika ingin memblokir subdomain tak terdaftar)
+
+if (!targetHost) {
+
+return fetch(request);
+
+}
+
+
+
+url.hostname = targetHost;
+
+
+
+const headers = new Headers(request.headers);
+
+headers.set("X-Forwarded-Host", originalHost);
+
+headers.set("X-Original-Host", originalHost);
+
+
+
+const response = await fetch(url.toString(), {
+
+method: request.method,
+
+headers: headers,
+
+body: request.body,
+
+redirect: "manual",
+
+});
+
+
+
+// Pastikan redirect (301/302) tetap memakai subdomain *.vz.gay, bukan *.pages.dev
+
+const newHeaders = new Headers(response.headers);
+
+const location = newHeaders.get("Location");
+
+if (location && location.includes(targetHost)) {
+
+newHeaders.set("Location", location.replace(targetHost, originalHost));
+
+}
+
+
+
+return new Response(response.body, {
+
+status: response.status,
+
+statusText: response.statusText,
+
+headers: newHeaders,
+
+});
+
+},
+
+};
+
+
+
+kalau untuk workers? apakah sama? soalnya beda url bawaan antara pages dan workers
+
+Kodenya sama persis jika ingin dimasukkan ke TARGET_GROUPS (cukup isi dengan domain *.workers.dev), tetapi untuk target sesama Worker sebenarnya Anda tidak perlu memasukkannya ke dalam proxy ini sama sekali.
+
+Perbedaan cara kerja antara Pages dan Workers membuat penanganannya bisa jauh lebih hemat kuota:
+
+Cara 1: Tempel Route Langsung ke Worker Tujuan (Paling Disarankan)
+Berbeda dengan Cloudflare Pages yang menolak request jika Host tidak terdaftar di Custom Domains, Cloudflare Workers menerima header Host apa pun dan bisa langsung dipasang ke Worker Route tanpa perlu menambah DNS record baru (karena sudah tertangkap wildcard * yang ada).
+
+Jangan masukkan subdomain Worker tersebut ke TARGET_GROUPS di vz-wildcard-proxy.
+
+Buka dashboard Worker tujuan Anda > Settings > Domains & Routes > Add > Route.
+
+Isi Route spesifiknya, misalnya api.vz.gay/* atau bot.vz.gay/* (Zone: vz.gay).
+
+Kenapa cara ini lebih baik untuk Workers?
+
+Prioritas Otomatis: Cloudflare selalu mendahulukan route spesifik (api.vz.gay/*) daripada route wildcard (*.vz.gay/*), sehingga trafik langsung masuk ke Worker tujuan tanpa mampir ke vz-wildcard-proxy.
+
+Hemat Kuota Request: Hanya terhitung 1x request Worker per kunjungan (jika lewat proxy, terhitung 2x: proxy + target).
+
+Lebih Aman: Anda tetap bisa menonaktifkan URL publik *.workers.dev bawaan pada Worker tujuan agar tidak bisa diakses langsung dari luar domain vz.gay.
+
+Cara 2: Tetap Lewat TARGET_GROUPS di Proxy (Jika Ingin Terpusat)
+Jika Anda memiliki puluhan subdomain untuk 1 Worker dan malas menambahkannya satu per satu di menu Routes, Anda bisa langsung mencampur URL .pages.dev dan .workers.dev dalam satu objek TARGET_GROUPS menggunakan kode yang sama:
+
+JavaScript
+const TARGET_GROUPS = {
+  // Target Cloudflare Pages
+  "project-files.pages.dev": [
+    "file.vz.gay",
+    "files.vz.gay",
+  ],
+
+  // Target Cloudflare Worker (pakai format nama-worker.subdomain-akun.workers.dev)
+  "nama-worker-anda.subdomain-akun.workers.dev": [
+    "sub1.vz.gay",
+    "sub2.vz.gay",
+  ],
+};
+Catatan jika memakai Cara 2 untuk Worker:
+
+Pastikan opsi workers.dev route pada Worker tujuan dalam keadaan Enabled (jika dimatikan, fetch() dari proxy akan menghasilkan error 404).
+
+Anda bisa mengecek alamat lengkap *.workers.dev masing-masing Worker di halaman utama Worker tersebut pada bagian Domains & Routes (atau Preview URL).
+
+Ringkasan Perbandingan
+Aspek	Target Cloudflare Pages	Target Cloudflare Workers (Cara 1 - Route Langsung)
+Wajib lewat vz-wildcard-proxy?	Ya (untuk rewrite Host ke .pages.dev)	Tidak (cukup pasang Route di Worker tujuan)
+Perlu tambah DNS record baru?	Tidak (cukup 1 record *)	Tidak (cukup 1 record *)
+Konsumsi kuota request Worker	1x request (di proxy)	1x request (langsung di Worker tujuan)
+Cara baca subdomain di aplikasi	Header X-Forwarded-Host	Langsung dari new URL(request.url).hostname
+setigan fail nya bagaimana
+
+Pilih Fail open (proceed) jika di zona vz.gay Anda juga memiliki DNS record spesifik lain yang mengarah ke server eksternal (seperti VPS, Vercel, atau hosting lain), atau biarkan Fail closed (block) jika seluruh subdomain di *.vz.gay hanya bergantung pada Worker dan tidak ada server origin fisik di balik DNS *.   
+image_236226.png
+
+Berikut perbedaannya pada konteks setup wildcard *.vz.gay/*:
+
+Fail open (proceed) — Disarankan jika ada subdomain eksternal (VPS/Vercel/dll.):
+Jika suatu saat Worker error atau kuota harian (100.000 request/hari pada paket gratis) habis, Cloudflare akan melewati Worker dan meneruskan request langsung ke DNS origin.
+
+Subdomain yang punya DNS record asli (misalnya CNAME ke Vercel atau A record ke VPS) tetap bisa diakses normal tanpa ikut mati.
+
+Subdomain yang hanya memakai record dummy AAAA 100:: akan tetap gagal diakses (karena 100:: adalah alamat discard), tetapi tidak akan mengembalikan kode error internal Worker Cloudflare (Error 1101/1015).
+
+Fail closed (block) (Default) — Cocok jika semua subdomain murni di Cloudflare:
+Jika kuota Worker habis atau script mengalami exception, Cloudflare langsung memblokir request dan menampilkan halaman error. Gunakan opsi ini hanya jika Anda sengaja memblokir akses ketika Worker tidak aktif.
+
+Karena Anda sebelumnya menambahkan fallback return fetch(request); agar subdomain lain yang punya DNS spesifik tetap jalan, Fail open (proceed) adalah pilihan yang paling selaras, lalu klik Add Route.   
+image_236226.png
+
+// Daftarkan project Cloudflare Pages tujuan beserta daftar subdomain-nya
+
+const TARGET_GROUPS = {
+
+"vzfiles.pages.dev": [
+
+"file.vz.gay",
+
+"files.vz.gay",
+
+],
+
+"searchgay.pages.dev": [
+
+"search.vz.gay",
+
+],
+
+};
+
+
+
+// Otomatis memetakan tiap subdomain ke target .pages.dev masing-masing
+
+const HOST_MAP = Object.entries(TARGET_GROUPS).reduce((acc, [target, hosts]) => {
+
+for (const host of hosts) {
+
+acc[host] = target;
+
+}
+
+return acc;
+
+}, {});
+
+
+
+export default {
+
+async fetch(request) {
+
+const url = new URL(request.url);
+
+const originalHost = url.hostname;
+
+const targetHost = HOST_MAP[originalHost];
+
+
+
+// Jika subdomain tidak ada di daftar atas, teruskan apa adanya ke DNS/route aslinya
+
+// (Ganti baris ini menjadi `return new Response("Not Found", { status: 404 });` jika ingin memblokir subdomain tak terdaftar)
+
+if (!targetHost) {
+
+return fetch(request);
+
+}
+
+
+
+url.hostname = targetHost;
+
+
+
+const headers = new Headers(request.headers);
+
+headers.set("X-Forwarded-Host", originalHost);
+
+headers.set("X-Original-Host", originalHost);
+
+
+
+const response = await fetch(url.toString(), {
+
+method: request.method,
+
+headers: headers,
+
+body: request.body,
+
+redirect: "manual",
+
+});
+
+
+
+// Pastikan redirect (301/302) tetap memakai subdomain *.vz.gay, bukan *.pages.dev
+
+const newHeaders = new Headers(response.headers);
+
+const location = newHeaders.get("Location");
+
+if (location && location.includes(targetHost)) {
+
+newHeaders.set("Location", location.replace(targetHost, originalHost));
+
+}
+
+
+
+return new Response(response.body, {
+
+status: response.status,
+
+statusText: response.statusText,
+
+headers: newHeaders,
+
+});
+
+},
+
+};
+
+
+
+tidak dapat terhubung
+
+Error DNS_PROBE_FINISHED_NXDOMAIN berarti domain search.vz.gay gagal ditemukan di level DNS sebelum sempat menyentuh Worker Anda. Konfigurasi Worker route *.vz.gay/* dan target searchgay.pages.dev pada kode Anda sudah benar, tetapi fitur Worker Route tidak otomatis membuat DNS record.   
+image_23665b.png
++ 2
+
+Untuk memperbaikinya, pastikan langkah DNS berikut sudah dilakukan:
+
+1. Tambahkan Wildcard Record * di Menu DNS vz.gay
+Di sidebar kiri dashboard Cloudflare, klik Domains > pilih vz.gay > masuk ke menu DNS > Records.
+
+Periksa apakah sudah ada record dengan nama *. Jika belum ada, klik Add record dan isi:
+
+Type: AAAA
+
+Name: *
+
+IPv6 address: 100::
+
+Proxy status: Pastikan Proxied (Awan Oranye) aktif (jika statusnya DNS only / awan abu-abu, trafik tidak akan masuk ke Worker).
+
+Klik Save.
+
+2. Bersihkan Cache DNS Browser (Jika Record Sudah Dibuat)
+Jika Anda baru saja membuat record * di atas setelah sempat membuka search.vz.gay, Chrome menyimpan cache error NXDOMAIN selama beberapa menit:   
+image_23665b.png
+
+Buka tab baru di Chrome dan ketik: chrome://net-internals/#dns
+
+Klik tombol Clear host cache.
+
+Muat ulang (Ctrl + Shift + R) halaman [https://search.vz.gay](https://search.vz.gay).
+
+okey, berhasil.
+
+
+
+kalau cara untuk multiple blog pakai workers route ya, tidak perlu masukan ke proxy?
+
+Ya, benar—selama aplikasi multiple blog tersebut dijalankan sebagai Cloudflare Worker (bukan Cloudflare Pages), Anda cukup memasang Workers Routes langsung di Worker blog tersebut tanpa memasukkannya ke vz-wildcard-proxy dan tanpa menambah DNS record baru.
+
+Alur dan pengaturannya sebagai berikut:
+
+1. Pasang Route Langsung di Worker Blog
+Buka dashboard Worker blog Anda > tab Domains & Routes > klik + Add Route.
+
+Masukkan pola route untuk masing-masing blog dengan Zone vz.gay, misalnya:
+
+cerita.vz.gay/*
+
+catatan.vz.gay/*
+
+jurnal.vz.gay/*
+
+Cloudflare otomatis memprioritaskan route spesifik di atas daripada route sapu jagat *.vz.gay/*, sehingga trafik langsung masuk ke Worker blog tanpa mampir ke vz-wildcard-proxy (hemat kuota request).
+
+2. Baca Subdomain di dalam Kode Worker Blog
+Karena request masuk langsung tanpa lewat proxy, Anda tidak perlu membaca X-Forwarded-Host. Cukup ambil langsung dari request.url untuk menentukan data/tema blog mana yang dimuat dari D1 atau KV:
+
+JavaScript
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const blogHost = url.hostname; // hasil: "cerita.vz.gay"
+
+    // Query konten berdasarkan blogHost...
+  },
+};
+Dua Hal yang Perlu Diperhatikan
+Gunakan 1 tingkat subdomain (namablog.vz.gay/*), hindari 2 tingkat (*.blog.vz.gay/*): Sertifikat Universal SSL gratis Cloudflare hanya mencakup 1 tingkat wildcard (*.vz.gay). Jika Anda memakai 2 tingkat seperti user1.blog.vz.gay, browser akan memblokir akses dengan error SSL kecuali Anda membeli Advanced Certificate Manager.
+
+Jika engine blog di-host di Cloudflare Pages: Pages tidak memiliki menu Workers Routes, sehingga khusus deployment Pages tetap harus didaftarkan di TARGET_GROUPS milik vz-wildcard-proxy.
+
+
+
+
+
+Gemini adalah AI dan dapat membuat kesalahan.
+
+Convert chat to PDF
+Convert chat to PDF
+Open this chat in Acrobat
