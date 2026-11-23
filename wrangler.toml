@@ -20,10 +20,10 @@ VIKINGFILE_API_URL = "https://vikingfile.com/api"
 # Aktifkan salah satu blok di bawah (D1 ATAU KV) lalu isi ID resource Anda sebelum push ke GitHub,
 # atau hapus file wrangler.toml jika ingin mengatur semua binding lewat UI Dashboard Cloudflare Pages.
 #
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "vzfiles_db"
-# database_id = "<YOUR_D1_DATABASE_ID>"
+[[d1_databases]]
+binding = "DB"
+database_name = "vzfiles_db"
+database_id = "b7115ed0-e36a-46c8-aa27-0fb8f453ec54"
 #
 # [[kv_namespaces]]
 # binding = "PORTAL_KV"
