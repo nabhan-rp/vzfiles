@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowUpRight, History, X } from 'lucide-react';
 import { UI_COPY, type Language } from '../data/i18n';
 
@@ -10,6 +10,13 @@ interface ChangelogModalProps {
 
 export function ChangelogModal({ isOpen, lang, onClose }: ChangelogModalProps) {
   const t = UI_COPY[lang].changelogModal;
+  const [selectedVersion, setSelectedVersion] = useState<string>(t.releases[0].version);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedVersion(t.releases[0].version);
+    }
+  }, [isOpen, t.releases]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -21,6 +28,9 @@ export function ChangelogModal({ isOpen, lang, onClose }: ChangelogModalProps) {
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  const activeRelease =
+    t.releases.find((release) => release.version === selectedVersion) || t.releases[0];
 
   return (
     <div
@@ -48,12 +58,12 @@ export function ChangelogModal({ isOpen, lang, onClose }: ChangelogModalProps) {
               </h2>
               <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-mono tabular-nums font-semibold text-blue-600 dark:text-blue-400">
-                  {t.version}
+                  {activeRelease.version}
                 </span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">{t.releaseDate}</span>
+                <span className="font-mono tabular-nums">{activeRelease.releaseDate}</span>
                 <span aria-hidden="true">·</span>
-                <span>{t.releaseLabel}</span>
+                <span>{activeRelease.releaseLabel}</span>
               </div>
             </div>
           </div>
@@ -68,11 +78,40 @@ export function ChangelogModal({ isOpen, lang, onClose }: ChangelogModalProps) {
           </button>
         </div>
 
+        {/* Version Selector Tabs */}
+        <div className="px-6 pt-4">
+          <div
+            role="tablist"
+            aria-label={t.versionSelectorLabel}
+            className="inline-flex items-center p-1 rounded-lg bg-slate-100 dark:bg-[#191D26] border border-slate-200/80 dark:border-[#262B38]"
+          >
+            {t.releases.map((release) => {
+              const isActive = release.version === activeRelease.version;
+              return (
+                <button
+                  key={release.version}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setSelectedVersion(release.version)}
+                  className={`px-3 py-1.5 text-xs font-mono tabular-nums font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-white dark:bg-[#242A37] text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {release.version}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          <p>{t.intro}</p>
+          <p>{activeRelease.intro}</p>
 
           <div className="space-y-5">
-            {t.sections.map((section) => (
+            {activeRelease.sections.map((section) => (
               <div
                 key={section.heading}
                 className="pt-4 border-t border-slate-100 dark:border-[#202531]"

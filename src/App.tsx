@@ -35,7 +35,13 @@ export default function App() {
   const { theme, setTheme } = useTheme();
   const { lang, setLang } = useLanguage();
   const vault = useSsoVault(lang);
-  const { history, addHistoryItem, removeHistoryItem, clearHistory } = useTransferHistory();
+  const {
+    history,
+    syncStatus: historySyncStatus,
+    addHistoryItem,
+    removeHistoryItem,
+    clearHistory,
+  } = useTransferHistory();
 
   const [inspectedHash, setInspectedHash] = useState<string | null>(() =>
     readInitialHashFromLocation()
@@ -137,6 +143,7 @@ export default function App() {
               onOpenLegal={() => handleOpenLegal('tos')}
               onInspectHash={handleInspectHash}
               history={history}
+              historySyncStatus={historySyncStatus}
               onAddHistory={addHistoryItem}
               onRemoveHistory={removeHistoryItem}
               onClearHistory={clearHistory}

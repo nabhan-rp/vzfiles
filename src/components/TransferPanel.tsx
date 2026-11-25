@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowUpRight,
@@ -7,22 +7,31 @@ import {
   Eye,
   FileUp,
   Link2,
+  Search,
   Trash2,
   UploadCloud,
   X,
 } from 'lucide-react';
 import { UI_COPY, type Language } from '../data/i18n';
 import type { SsoSession, VikingHashProfile } from '../hooks/useSsoVault';
-import type { LocalTransferRecord } from '../hooks/useTransferHistory';
+import {
+  MAX_HISTORY_ITEMS,
+  type HistorySyncStatus,
+  type LocalTransferRecord,
+} from '../hooks/useTransferHistory';
 import {
   buildVikingOfficialUrl,
   buildVzShareUrl,
+  deleteVikingFile,
   formatBytes,
   uploadFileToViking,
   uploadRemoteUrlToViking,
   type UploadCompleteResponse,
   type UploadProgressState,
 } from '../lib/vikingApi';
+import { HistoryDeleteModal, type HistoryDeleteTarget } from './HistoryDeleteModal';
+
+type HistoryFilter = 'all' | 'file' | 'remote' | 'anonymous' | 'hashed';
 
 interface TransferPanelProps {
   lang: Language;
@@ -35,9 +44,25 @@ interface TransferPanelProps {
   onOpenLegal: () => void;
   onInspectHash: (hash: string) => void;
   history: LocalTransferRecord[];
+  historySyncStatus: HistorySyncStatus;
   onAddHistory: (item: LocalTransferRecord) => void;
-  onRemoveHistory: (hash: string) => void;
-  onClearHistory: () => void;
+  onRemoveHistory: (hash: string) => void | Promise<void>;
+  onClearHistory: () => void | Promise<void>;
+}
+
+function formatHistoryDate(iso: string, lang: Language): string {
+  const time = Date.parse(iso);
+  if (!Number.isFinite(time)) return '—';
+  try {
+    return new Intl.DateTimeFormat(lang === 'id' ? 'id-ID' : 'en-US', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(time));
+  } catch {
+    return iso.slice(0, 10);
+  }
 }
 
 export function TransferPanel({
@@ -51,6 +76,7 @@ export function TransferPanel({
   onOpenLegal,
   onInspectHash,
   history,
+  historySyncStatus,
   onAddHistory,
   onRemoveHistory,
   onClearHistory,
@@ -72,6 +98,10 @@ export function TransferPanel({
   const [result, setResult] = useState<UploadCompleteResponse | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  const [historyQuery, setHistoryQuery] = useState('');
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
+  const [deleteTarget, setDeleteTarget] = useState<HistoryDeleteTarget | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -80,6 +110,30 @@ export function TransferPanel({
       setFolderPath(activeProfile.defaultPath);
     }
   }, [activeProfile?.id]);
+
+  const filteredHistory = useMemo(() => {
+    const q = historyQuery.trim().toLowerCase();
+    return history.filter((item) => {
+      if (historyFilter === 'file' && item.sourceType !== 'file') return false;
+      if (historyFilter === 'remote' && item.sourceType !== 'remote') return false;
+      if (historyFilter === 'anonymous' && !item.isAnonymous) return false;
+      if (historyFilter === 'hashed' && item.isAnonymous) return false;
+
+      if (!q) return true;
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.hash.toLowerCase().includes(q) ||
+        (item.path || '').toLowerCase().includes(q) ||
+        (item.profileLabel || '').toLowerCase().includes(q)
+      );
+    });
+  }, [history, historyFilter, historyQuery]);
+
+  const matchedDeleteProfile = useMemo(() => {
+    if (!deleteTarget || deleteTarget.mode !== 'single') return null;
+    if (deleteTarget.item.isAnonymous || !deleteTarget.item.profileId) return null;
+    return profiles.find((p) => p.id === deleteTarget.item.profileId) ?? null;
+  }, [deleteTarget, profiles]);
 
   const handleCopy = async (key: string, value: string) => {
     try {
@@ -134,7 +188,9 @@ export function TransferPanel({
           size: res.size || selectedFile.size,
           url: res.url || buildVikingOfficialUrl(res.hash),
           sourceType: 'file',
-          profileLabel: activeProfile ? activeProfile.label : t.anonymousOption,
+          isAnonymous: !activeProfile,
+          profileId: activeProfile?.id ?? null,
+          profileLabel: activeProfile ? activeProfile.label : th.anonymousTag,
           path: folderPath.trim() || undefined,
           createdAt: new Date().toISOString(),
         });
@@ -168,7 +224,9 @@ export function TransferPanel({
         size: res.size || 0,
         url: res.url || buildVikingOfficialUrl(res.hash),
         sourceType: 'remote',
-        profileLabel: activeProfile ? activeProfile.label : t.anonymousOption,
+        isAnonymous: !activeProfile,
+        profileId: activeProfile?.id ?? null,
+        profileLabel: activeProfile ? activeProfile.label : th.anonymousTag,
         path: folderPath.trim() || undefined,
         createdAt: new Date().toISOString(),
       });
@@ -177,6 +235,27 @@ export function TransferPanel({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmDelete = async ({ deleteFromViking }: { deleteFromViking: boolean }) => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.mode === 'all') {
+      await onClearHistory();
+      return;
+    }
+
+    if (deleteFromViking && matchedDeleteProfile) {
+      const res = await deleteVikingFile({
+        hash: deleteTarget.item.hash,
+        userHash: matchedDeleteProfile.userHash,
+      });
+      if (res.error) {
+        throw new Error(res.error);
+      }
+    }
+
+    await onRemoveHistory(deleteTarget.item.hash);
   };
 
   const resetTransferForm = () => {
@@ -190,6 +269,25 @@ export function TransferPanel({
 
   const sharePageUrl = result ? buildVzShareUrl(result.hash) : '';
   const officialUrl = result ? result.url || buildVikingOfficialUrl(result.hash) : '';
+
+  const syncStatusText =
+    historySyncStatus === 'synced'
+      ? th.syncSynced
+      : historySyncStatus === 'syncing'
+        ? th.syncSyncing
+        : historySyncStatus === 'error'
+          ? th.syncError
+          : th.syncLocal;
+
+  const filterButtons: Array<{ id: HistoryFilter; label: string }> = [
+    { id: 'all', label: th.filterAll },
+    { id: 'file', label: th.filterFile },
+    { id: 'remote', label: th.filterRemote },
+    { id: 'anonymous', label: th.filterAnonymous },
+    { id: 'hashed', label: th.filterHashed },
+  ];
+
+  const hasActiveFilter = historyQuery.trim().length > 0 || historyFilter !== 'all';
 
   return (
     <div id="transfer" className="space-y-8">
@@ -572,28 +670,85 @@ export function TransferPanel({
         )}
       </div>
 
-      {/* Local Transfer History */}
+      {/* Synced / Local Transfer History */}
       <div className="rounded-2xl bg-white dark:bg-[#13161C] border border-slate-200 dark:border-[#232732] p-6 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#232732]">
+        <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#232732]">
           <div>
-            <h2 className="font-display text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-              {th.title}
-            </h2>
-            <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              {th.subtitle}
+            <div className="flex flex-wrap items-baseline gap-2.5">
+              <h2 className="font-display text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                {th.title}
+              </h2>
+              <span className="font-mono text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                {history.length} / {MAX_HISTORY_ITEMS}
+              </span>
+              <span aria-hidden="true" className="text-xs text-slate-300 dark:text-slate-600">
+                ·
+              </span>
+              <span
+                className={`text-xs ${
+                  historySyncStatus === 'synced'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : historySyncStatus === 'error'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {syncStatusText}
+              </span>
+            </div>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              {session ? th.subtitleSynced : th.subtitleLocal}
             </p>
           </div>
           {history.length > 0 && (
             <button
               type="button"
-              onClick={onClearHistory}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50/70 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 rounded-lg transition-colors cursor-pointer"
+              onClick={() => setDeleteTarget({ mode: 'all', totalCount: history.length })}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50/70 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>{th.clearAll}</span>
             </button>
           )}
         </div>
+
+        {/* Search & Source Filter Bar */}
+        {history.length > 0 && (
+          <div className="mt-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="search"
+                value={historyQuery}
+                onChange={(e) => setHistoryQuery(e.target.value)}
+                placeholder={th.searchPlaceholder}
+                aria-label={th.searchPlaceholder}
+                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-[#FAFAFA] dark:bg-[#0B0D11] border border-slate-200 dark:border-[#262C3A] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500"
+              />
+            </div>
+
+            <div
+              role="group"
+              aria-label={th.colSource}
+              className="inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-[#191D26] border border-slate-200/80 dark:border-[#262B38] self-start"
+            >
+              {filterButtons.map((btn) => (
+                <button
+                  key={btn.id}
+                  type="button"
+                  onClick={() => setHistoryFilter(btn.id)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    historyFilter === btn.id
+                      ? 'bg-white dark:bg-[#242A37] text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {history.length === 0 ? (
           <div className="py-10 text-center">
@@ -604,6 +759,27 @@ export function TransferPanel({
               {th.emptyDesc}
             </p>
           </div>
+        ) : filteredHistory.length === 0 ? (
+          <div className="py-10 text-center space-y-2.5">
+            <p className="font-display text-sm font-semibold text-slate-900 dark:text-white">
+              {th.noMatchTitle}
+            </p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              {th.noMatchDesc}
+            </p>
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setHistoryQuery('');
+                  setHistoryFilter('all');
+                }}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#1E232F] dark:hover:bg-[#272D3C] text-slate-800 dark:text-slate-100 transition-colors cursor-pointer"
+              >
+                {th.resetFilters}
+              </button>
+            )}
+          </div>
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
@@ -612,12 +788,16 @@ export function TransferPanel({
                   <th className="py-2.5 pr-4">{th.colFile}</th>
                   <th className="py-2.5 px-4 text-right">{th.colSize}</th>
                   <th className="py-2.5 px-4">{th.colSource}</th>
+                  <th className="py-2.5 px-4">{th.colDate}</th>
                   <th className="py-2.5 pl-4 text-right">{th.colActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#1E232D]">
-                {history.map((item) => {
+                {filteredHistory.map((item) => {
                   const shareLink = buildVzShareUrl(item.hash);
+                  const identityText = item.isAnonymous
+                    ? th.anonymousTag
+                    : item.profileLabel || th.filterHashed;
                   return (
                     <tr
                       key={item.hash}
@@ -627,7 +807,7 @@ export function TransferPanel({
                         <p className="font-medium text-slate-900 dark:text-white truncate">
                           {item.name}
                         </p>
-                        <p className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                        <p className="font-mono text-xs text-slate-500 dark:text-slate-400 truncate">
                           {item.hash}
                           {item.path ? ` · ${item.path}` : ''}
                         </p>
@@ -637,7 +817,10 @@ export function TransferPanel({
                       </td>
                       <td className="py-3 px-4 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         {item.sourceType === 'file' ? th.sourceFile : th.sourceRemote} ·{' '}
-                        {item.profileLabel}
+                        {identityText}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap">
+                        {formatHistoryDate(item.createdAt, lang)}
                       </td>
                       <td className="py-3 pl-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center justify-end gap-2">
@@ -672,7 +855,7 @@ export function TransferPanel({
                           </a>
                           <button
                             type="button"
-                            onClick={() => onRemoveHistory(item.hash)}
+                            onClick={() => setDeleteTarget({ mode: 'single', item })}
                             aria-label={th.remove}
                             className="p-1.5 rounded-md text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-[#1D222D] transition-colors cursor-pointer"
                           >
@@ -688,6 +871,15 @@ export function TransferPanel({
           </div>
         )}
       </div>
+
+      <HistoryDeleteModal
+        target={deleteTarget}
+        matchedProfile={matchedDeleteProfile}
+        lang={lang}
+        isSignedIn={Boolean(session)}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -248,6 +248,159 @@ async function startServer() {
     }
   });
 
+  interface DevHistoryItem {
+    hash: string;
+    name: string;
+    size: number;
+    url: string;
+    sourceType: 'file' | 'remote';
+    isAnonymous: boolean;
+    profileId: string | null;
+    profileLabel: string;
+    path?: string;
+    createdAt: string;
+  }
+
+  const MAX_HISTORY_ITEMS = 200;
+  const HISTORY_HASH_PATTERN = /^[a-zA-Z0-9_-]{2,128}$/;
+  const devHistoryStore = new Map<string, { items: DevHistoryItem[]; updatedAt: string }>();
+
+  function sanitizeDevHistoryItem(raw: unknown): DevHistoryItem | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const obj = raw as Record<string, unknown>;
+    const hash = typeof obj.hash === 'string' ? obj.hash.trim() : '';
+    if (!HISTORY_HASH_PATTERN.test(hash)) return null;
+
+    const fallbackUrl = `https://vikingfile.com/f/${encodeURIComponent(hash)}`;
+    let safeUrl = fallbackUrl;
+    if (typeof obj.url === 'string') {
+      try {
+        const parsed = new URL(obj.url.trim());
+        if (parsed.protocol === 'https:') {
+          safeUrl = parsed.toString().slice(0, 500);
+        }
+      } catch {
+        safeUrl = fallbackUrl;
+      }
+    }
+
+    const rawDate = typeof obj.createdAt === 'string' ? Date.parse(obj.createdAt) : NaN;
+    const createdAt = Number.isFinite(rawDate)
+      ? new Date(rawDate).toISOString()
+      : new Date().toISOString();
+
+    const profileId =
+      typeof obj.profileId === 'string' && obj.profileId.trim()
+        ? obj.profileId.trim().slice(0, 80)
+        : null;
+    const isAnonymous =
+      typeof obj.isAnonymous === 'boolean' ? obj.isAnonymous : profileId === null;
+    const rawSize = Number(obj.size);
+
+    return {
+      hash,
+      name: (typeof obj.name === 'string' && obj.name.trim() ? obj.name.trim() : hash).slice(0, 255),
+      size: Number.isFinite(rawSize) && rawSize > 0 ? Math.floor(rawSize) : 0,
+      url: safeUrl,
+      sourceType: obj.sourceType === 'remote' ? 'remote' : 'file',
+      isAnonymous,
+      profileId: isAnonymous ? null : profileId,
+      profileLabel:
+        typeof obj.profileLabel === 'string' ? obj.profileLabel.trim().slice(0, 120) : '',
+      path:
+        typeof obj.path === 'string' && obj.path.trim()
+          ? obj.path.trim().slice(0, 255)
+          : undefined,
+      createdAt,
+    };
+  }
+
+  app.get('/api/history', async (req: Request, res: Response) => {
+    try {
+      const sub = await resolveAuth0Sub(req);
+      if (!sub) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const existing = devHistoryStore.get(sub);
+      res.json({
+        synced: true,
+        backend: 'dev-memory',
+        items: existing?.items ?? [],
+        updatedAt: existing?.updatedAt ?? null,
+      });
+    } catch {
+      res.status(502).json({ error: 'Failed to load transfer history' });
+    }
+  });
+
+  app.post('/api/history', async (req: Request, res: Response) => {
+    try {
+      const sub = await resolveAuth0Sub(req);
+      if (!sub) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const rawList: unknown[] = Array.isArray(req.body?.items)
+        ? req.body.items
+        : req.body?.item
+          ? [req.body.item]
+          : [];
+      const sanitized = rawList
+        .map(sanitizeDevHistoryItem)
+        .filter((x: DevHistoryItem | null): x is DevHistoryItem => x !== null)
+        .slice(0, MAX_HISTORY_ITEMS);
+
+      if (sanitized.length === 0) {
+        res.status(400).json({ error: 'At least one valid history item is required' });
+        return;
+      }
+
+      const existing = devHistoryStore.get(sub)?.items ?? [];
+      const merged = new Map<string, DevHistoryItem>();
+      for (const item of existing) merged.set(item.hash, item);
+      for (const item of sanitized) {
+        const prev = merged.get(item.hash);
+        if (!prev || item.createdAt >= prev.createdAt) {
+          merged.set(item.hash, item);
+        }
+      }
+      const items = Array.from(merged.values())
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, MAX_HISTORY_ITEMS);
+      const updatedAt = new Date().toISOString();
+      devHistoryStore.set(sub, { items, updatedAt });
+      res.json({ synced: true, backend: 'dev-memory', items, updatedAt });
+    } catch {
+      res.status(502).json({ error: 'Failed to save transfer history' });
+    }
+  });
+
+  app.delete('/api/history', async (req: Request, res: Response) => {
+    try {
+      const sub = await resolveAuth0Sub(req);
+      if (!sub) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const clearAll = req.query.all === '1' || req.query.all === 'true';
+      const targetHash = typeof req.query.hash === 'string' ? req.query.hash.trim() : '';
+
+      if (!clearAll && !HISTORY_HASH_PATTERN.test(targetHash)) {
+        res.status(400).json({ error: 'Specify a valid hash or all=1' });
+        return;
+      }
+
+      const existing = devHistoryStore.get(sub)?.items ?? [];
+      const nextItems = clearAll ? [] : existing.filter((item) => item.hash !== targetHash);
+      const updatedAt = new Date().toISOString();
+      devHistoryStore.set(sub, { items: nextItems, updatedAt });
+      res.json({ synced: true, backend: 'dev-memory', items: nextItems, updatedAt });
+    } catch {
+      res.status(502).json({ error: 'Failed to delete transfer history' });
+    }
+  });
+
   app.get('/api/viking/get-server', async (_req: Request, res: Response) => {
     try {
       const server = await getVikingServer();

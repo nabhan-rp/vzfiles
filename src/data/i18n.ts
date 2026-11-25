@@ -71,18 +71,59 @@ export const UI_COPY = {
     },
     history: {
       title: 'Riwayat Transfer',
-      subtitle: 'Tersimpan di perangkat Anda untuk akses cepat.',
+      subtitleLocal: 'Tersimpan di perangkat Anda. Masuk VZ SSO untuk sinkronisasi riwayat lintas perangkat.',
+      subtitleSynced: 'Tersinkronisasi ke akun VZ SSO Anda lintas perangkat, termasuk unggahan anonim maupun ber-User Hash.',
+      syncLocal: 'Tersimpan di perangkat',
+      syncSyncing: 'Menyinkronkan riwayat...',
+      syncSynced: 'Tersinkronisasi ke akun',
+      syncError: 'Sinkronisasi tertunda (tersimpan di perangkat)',
+      searchPlaceholder: 'Cari nama file, hash, atau path...',
+      filterAll: 'Semua',
+      filterFile: 'Unggah File',
+      filterRemote: 'URL Remote',
+      filterAnonymous: 'Anonim',
+      filterHashed: 'Ber-Hash',
+      anonymousTag: 'Anonim',
+      resetFilters: 'Reset Filter',
+      noMatchTitle: 'Tidak ada riwayat yang cocok',
+      noMatchDesc: 'Coba ubah kata kunci pencarian atau pilih filter sumber lainnya.',
       emptyTitle: 'Belum ada riwayat transfer',
-      emptyDesc: 'Berkas yang Anda unggah dari perangkat ini akan muncul di sini.',
+      emptyDesc: 'Berkas yang Anda unggah (anonim maupun ber-User Hash) akan muncul di sini.',
       clearAll: 'Hapus Semua',
       colFile: 'Nama Berkas',
       colSize: 'Ukuran',
-      colSource: 'Sumber',
+      colSource: 'Sumber & Identitas',
+      colDate: 'Waktu',
       colActions: 'Aksi',
       sourceFile: 'Unggah File',
       sourceRemote: 'URL Remote',
       inspect: 'Info File',
-      remove: 'Hapus',
+      remove: 'Hapus Riwayat',
+    },
+    historyDeleteModal: {
+      singleTitle: 'Hapus dari Riwayat Transfer?',
+      allTitle: 'Hapus Semua Riwayat Transfer?',
+      singleSubtitleLocal: 'Catatan unggahan ini akan dihapus dari perangkat Anda.',
+      singleSubtitleSynced: 'Catatan unggahan ini akan dihapus dari akun VZ SSO Anda di semua perangkat.',
+      allSubtitleLocal: 'Sebanyak {count} catatan riwayat di perangkat ini akan dihapus.',
+      allSubtitleSynced: 'Sebanyak {count} catatan riwayat di akun VZ SSO Anda akan dihapus dari semua perangkat.',
+      disclaimerHeading: 'Pemberitahuan Penyimpanan Berkas',
+      disclaimerAnonymous:
+        'Aksi ini hanya menghapus catatan riwayat di VZ Files. Berkas unggahan anonim tetap tersimpan di VikingFiles hingga kedaluwarsa otomatis dan tidak dapat dihapus melalui layanan.',
+      disclaimerHashedAvailable:
+        'Secara bawaan, aksi ini hanya menghapus catatan riwayat di VZ Files dan tidak menghapus berkas di VikingFiles. Jika Anda ingin menghapus berkas aslinya secara permanen, aktifkan opsi di bawah.',
+      disclaimerHashedMissingProfile:
+        'Aksi ini hanya menghapus catatan riwayat di VZ Files. Profil User Hash asal berkas ini tidak lagi tersimpan di Brankas SSO Anda, sehingga berkas asli tetap berada di VikingFiles.',
+      disclaimerAll:
+        'Aksi ini hanya menghapus daftar catatan riwayat di VZ Files. Seluruh berkas yang telah diunggah tetap tersimpan di VikingFiles. Untuk menghapus berkas ber-User Hash secara permanen, hapus satu per satu atau kelola melalui Brankas SSO.',
+      vikingCheckboxLabel: 'Sekaligus hapus berkas permanen dari VikingFiles (Profil: {profile})',
+      vikingCheckboxHint: 'Tindakan ini permanen dan berkas tidak dapat dipulihkan setelah dihapus dari VikingFiles.',
+      cancel: 'Batal',
+      confirmSingle: 'Ya, Hapus Riwayat',
+      confirmSingleWithViking: 'Ya, Hapus Riwayat & Berkas',
+      confirmAll: 'Ya, Hapus Semua Riwayat',
+      deleting: 'Menghapus...',
+      deleteFailedFallback: 'Gagal menghapus berkas dari VikingFiles. Riwayat tidak diubah.',
     },
     check: {
       title: 'Periksa & Halaman Info File',
@@ -221,7 +262,7 @@ export const UI_COPY = {
       privacyItems: [
         {
           heading: '1. Data Perangkat & Sinkronisasi Akun',
-          body: 'Riwayat transfer anonim dan daftar User Hash VikingFile disimpan di perangkat Anda. Saat Anda masuk menggunakan VZ SSO (accounts.vz.gay), daftar profil User Hash dapat disinkronkan lintas perangkat ke akun Anda tanpa menyimpan isi berkas.',
+          body: 'Riwayat transfer dan daftar User Hash VikingFile disimpan di perangkat Anda. Saat Anda masuk menggunakan VZ SSO (accounts.vz.gay), daftar profil User Hash dan riwayat unggahan (termasuk unggahan anonim, hingga 200 entri terbaru) disinkronkan lintas perangkat ke akun Anda tanpa pernah menyimpan isi berkas. Anda dapat menghapus riwayat kapan saja.',
         },
         {
           heading: '2. Pemrosesan Transfer Berkas',
@@ -237,56 +278,100 @@ export const UI_COPY = {
     },
     changelogModal: {
       title: 'Catatan Rilis VZ Files',
-      version: 'v1.0.0',
-      releaseDate: '23 Nov 2026',
-      releaseLabel: 'Rilis Publik',
-      intro:
-        'VZ Files resmi dirilis untuk publik di files.vz.gay dan file.vz.gay di bawah naungan PT Galeri Langkah Bahagia Yuwana (galbay), didukung infrastruktur penyimpanan sementara dari VikingFiles.',
-      sections: [
+      versionSelectorLabel: 'Pilih versi rilis',
+      releases: [
         {
-          heading: 'Fitur Utama Transfer & Berbagi',
-          items: [
+          version: 'v1.0.1',
+          releaseDate: '25 Nov 2026',
+          releaseLabel: 'Pembaruan Riwayat SSO',
+          intro:
+            'Pembaruan ini menghadirkan sinkronisasi riwayat unggahan lintas perangkat bagi pengguna VZ SSO—termasuk unggahan anonim maupun ber-User Hash—beserta pencarian, filter, dan konfirmasi hapus yang lebih aman.',
+          sections: [
             {
-              title: 'Unggah Berkas & Tarik URL Remote',
-              desc: 'Dukungan unggahan bertahap untuk file besar maupun pengambilan langsung dari tautan HTTP/HTTPS dengan opsi isolasi path folder.',
+              heading: 'Riwayat Unggahan Tersinkronisasi',
+              items: [
+                {
+                  title: 'Sinkronisasi Lintas Perangkat (Hingga 200 Entri)',
+                  desc: 'Pengguna yang login VZ SSO otomatis menyimpan riwayat unggahan anonim maupun ber-User Hash di akun, sehingga tautan berkas tetap mudah ditemukan saat berganti perangkat atau berpindah antara files.vz.gay dan file.vz.gay.',
+                },
+                {
+                  title: 'Penggabungan Riwayat Lokal Saat Login',
+                  desc: 'Riwayat unggahan yang sempat tersimpan di browser sebelum masuk akan digabungkan otomatis ke akun VZ SSO Anda tanpa duplikat.',
+                },
+                {
+                  title: 'Pencarian & Filter Sumber',
+                  desc: 'Cari berkas berdasarkan nama, hash, atau path folder, serta saring daftar berdasarkan Semua, Unggah File, URL Remote, Anonim, atau Ber-Hash.',
+                },
+              ],
             },
             {
-              title: 'Halaman Info File & Kode QR',
-              desc: 'Periksa status berkas secara massal, salin tautan berbagi VZ Files, dan hasilkan Kode QR siap unduh (PNG).',
-            },
-            {
-              title: 'Pengalihan Unduhan Resmi VikingFile',
-              desc: 'Seluruh tombol unduhan mengarah langsung ke halaman resmi VikingFiles untuk mendukung keberlanjutan infrastruktur.',
+              heading: 'Keamanan & Kontrol Penghapusan',
+              items: [
+                {
+                  title: 'Konfirmasi Hapus per Berkas & Semua Riwayat',
+                  desc: 'Setiap penghapusan riwayat menampilkan dialog konfirmasi beserta pemberitahuan jelas bahwa berkas anonim tetap berada di VikingFiles hingga kedaluwarsa otomatis.',
+                },
+                {
+                  title: 'Opsi Hapus Berkas di VikingFiles Khusus Ber-Hash',
+                  desc: 'Untuk unggahan yang memakai User Hash aktif di Brankas SSO, tersedia kotak centang opsional jika Anda ingin sekaligus menghapus berkas secara permanen dari VikingFiles.',
+                },
+              ],
             },
           ],
         },
         {
-          heading: 'Akun VZ SSO & Brankas Multi-Hash',
-          items: [
+          version: 'v1.0.0',
+          releaseDate: '23 Nov 2026',
+          releaseLabel: 'Rilis Publik Perdana',
+          intro:
+            'VZ Files resmi dirilis untuk publik di files.vz.gay dan file.vz.gay di bawah naungan PT Galeri Langkah Bahagia Yuwana (galbay), didukung infrastruktur penyimpanan sementara dari VikingFiles.',
+          sections: [
             {
-              title: 'Sinkronisasi Multi-Hash Lintas Perangkat',
-              desc: 'Masuk dengan akun VZ SSO (accounts.vz.gay) untuk menyimpan, mengganti, dan menyinkronkan beberapa User Hash VikingFiles secara otomatis.',
+              heading: 'Fitur Utama Transfer & Berbagi',
+              items: [
+                {
+                  title: 'Unggah Berkas & Tarik URL Remote',
+                  desc: 'Dukungan unggahan bertahap untuk file besar lengkap dengan progres dan pembatalan, serta pengambilan langsung dari tautan HTTP/HTTPS dengan opsi isolasi path folder.',
+                },
+                {
+                  title: 'Halaman Info File & Kode QR',
+                  desc: 'Periksa status hingga 100 berkas sekaligus, bagikan halaman info files.vz.gay/?f=HASH, dan hasilkan Kode QR (tautan VZ Files atau VikingFile) siap unduh (PNG).',
+                },
+                {
+                  title: 'Pengalihan Unduhan Resmi VikingFile',
+                  desc: 'Seluruh tombol unduhan mengarah langsung ke halaman resmi VikingFiles untuk mendukung keberlanjutan infrastruktur.',
+                },
+              ],
             },
             {
-              title: 'Kelola Berkas & Panduan Pengguna Baru',
-              desc: 'Ganti nama atau hapus file pada User Hash aktif langsung dari Brankas SSO, dilengkapi panduan 3 langkah mendapatkan User Hash di VikingFile.',
+              heading: 'Akun VZ SSO & Brankas Multi-Hash',
+              items: [
+                {
+                  title: 'Sinkronisasi Multi-Hash Lintas Perangkat',
+                  desc: 'Masuk dengan akun VZ SSO (accounts.vz.gay) untuk menyimpan, mengganti, dan menyinkronkan beberapa User Hash VikingFiles secara otomatis.',
+                },
+                {
+                  title: 'Kelola Berkas & Panduan Pengguna Baru',
+                  desc: 'Telusuri daftar berkas berhalaman, filter path folder, ganti nama atau hapus file pada User Hash aktif, lengkap dengan panduan 3 langkah mendapatkan User Hash di VikingFile.',
+                },
+                {
+                  title: 'Optimalisasi Subdomain Ganda',
+                  desc: 'Login, menu akun (myaccount.vz.gay), dan sinkronisasi sesi berjalan mulus di files.vz.gay maupun file.vz.gay lengkap dengan penerusan pilihan bahasa.',
+                },
+              ],
             },
             {
-              title: 'Optimalisasi Subdomain Ganda',
-              desc: 'Login dan sinkronisasi sesi berjalan mulus di files.vz.gay maupun file.vz.gay lengkap dengan penerusan pilihan bahasa.',
-            },
-          ],
-        },
-        {
-          heading: 'Pengalaman Pengguna & Kesiapan Publik',
-          items: [
-            {
-              title: 'Dwibahasa & Tema Adaptif',
-              desc: 'Tersedia dalam bahasa Indonesia dan Inggris dengan mode tampilan Sistem, Terang, dan Gelap.',
-            },
-            {
-              title: 'Metadata Sosial & Pencarian',
-              desc: 'Pratinjau tautan dilengkapi kartu sosial khusus agar berkas dan halaman VZ Files tampil rapi saat dibagikan.',
+              heading: 'Pengalaman Pengguna & Kesiapan Publik',
+              items: [
+                {
+                  title: 'Dwibahasa & Tema Adaptif',
+                  desc: 'Tersedia dalam bahasa Indonesia dan Inggris dengan mode tampilan Sistem, Terang, dan Gelap.',
+                },
+                {
+                  title: 'Metadata Sosial & Pencarian',
+                  desc: 'Pratinjau tautan dilengkapi kartu sosial khusus, ikon peramban, dan judul halaman dinamis agar berkas dan halaman VZ Files tampil rapi saat dibagikan.',
+                },
+              ],
             },
           ],
         },
@@ -301,7 +386,7 @@ export const UI_COPY = {
       searchLink: 'VZ Search',
       tosLink: 'Ketentuan Layanan',
       privacyLink: 'Kebijakan Privasi',
-      changelogLink: 'v1.0.0 · Catatan Rilis',
+      changelogLink: 'v1.0.1 · Catatan Rilis',
       vikingSponsor: 'Didukung oleh VikingFiles',
       globalSponsor: 'jajanserver.com (galbay)',
     },
@@ -376,18 +461,59 @@ export const UI_COPY = {
     },
     history: {
       title: 'Transfer History',
-      subtitle: 'Saved on your device for quick access.',
+      subtitleLocal: 'Saved on this device. Sign in with VZ SSO to sync history across devices.',
+      subtitleSynced: 'Synced to your VZ SSO account across devices, including both anonymous and hashed uploads.',
+      syncLocal: 'Saved on device',
+      syncSyncing: 'Syncing history...',
+      syncSynced: 'Synced to account',
+      syncError: 'Sync pending (saved on device)',
+      searchPlaceholder: 'Search filename, hash, or path...',
+      filterAll: 'All',
+      filterFile: 'File Upload',
+      filterRemote: 'Remote URL',
+      filterAnonymous: 'Anonymous',
+      filterHashed: 'Hashed',
+      anonymousTag: 'Anonymous',
+      resetFilters: 'Reset Filters',
+      noMatchTitle: 'No matching history entries',
+      noMatchDesc: 'Try adjusting your search query or switching the active filter.',
       emptyTitle: 'No transfers yet',
-      emptyDesc: 'Files uploaded from this device will appear here.',
+      emptyDesc: 'Files you upload (anonymous or hashed) will appear here.',
       clearAll: 'Clear All',
       colFile: 'Filename',
       colSize: 'Size',
-      colSource: 'Source',
+      colSource: 'Source & Identity',
+      colDate: 'Date',
       colActions: 'Actions',
       sourceFile: 'File Upload',
       sourceRemote: 'Remote URL',
       inspect: 'File Info',
-      remove: 'Remove',
+      remove: 'Remove History',
+    },
+    historyDeleteModal: {
+      singleTitle: 'Remove from Transfer History?',
+      allTitle: 'Clear All Transfer History?',
+      singleSubtitleLocal: 'This upload entry will be removed from this device.',
+      singleSubtitleSynced: 'This upload entry will be removed from your VZ SSO account across all devices.',
+      allSubtitleLocal: 'All {count} history entries on this device will be removed.',
+      allSubtitleSynced: 'All {count} history entries in your VZ SSO account will be removed across all devices.',
+      disclaimerHeading: 'File Storage Notice',
+      disclaimerAnonymous:
+        'This action only removes the history entry in VZ Files. Anonymous files remain stored on VikingFiles until automatic expiration and cannot be deleted through the service.',
+      disclaimerHashedAvailable:
+        'By default, this only removes the history entry in VZ Files and leaves the file intact on VikingFiles. Enable the option below if you also want to permanently delete the file from VikingFiles.',
+      disclaimerHashedMissingProfile:
+        'This action only removes the history entry in VZ Files. The original User Hash profile is no longer in your SSO Vault, so the file itself remains stored on VikingFiles.',
+      disclaimerAll:
+        'This action only clears your history list in VZ Files. All uploaded files remain stored on VikingFiles. To permanently delete hashed files, delete them individually or manage them in SSO Vault.',
+      vikingCheckboxLabel: 'Also permanently delete file from VikingFiles (Profile: {profile})',
+      vikingCheckboxHint: 'This is permanent and the file cannot be recovered once deleted from VikingFiles.',
+      cancel: 'Cancel',
+      confirmSingle: 'Yes, Remove History',
+      confirmSingleWithViking: 'Yes, Delete History & File',
+      confirmAll: 'Yes, Clear All History',
+      deleting: 'Deleting...',
+      deleteFailedFallback: 'Failed to delete file from VikingFiles. History entry was kept.',
     },
     check: {
       title: 'Check & File Info Page',
@@ -526,7 +652,7 @@ export const UI_COPY = {
       privacyItems: [
         {
           heading: '1. Device Storage & Account Sync',
-          body: 'Anonymous transfer history and saved VikingFile User Hashes are stored on your device. When signed in via VZ SSO (accounts.vz.gay), your User Hash profiles can sync across devices for your account without storing file contents.',
+          body: 'Transfer history and saved VikingFile User Hashes are stored on your device. When signed in via VZ SSO (accounts.vz.gay), your User Hash profiles and transfer history (including anonymous uploads, up to the latest 200 entries) sync across devices for your account without ever storing file contents. You may clear your history at any time.',
         },
         {
           heading: '2. File Transfer Processing',
@@ -542,56 +668,100 @@ export const UI_COPY = {
     },
     changelogModal: {
       title: 'VZ Files Release Notes',
-      version: 'v1.0.0',
-      releaseDate: 'Nov 23, 2026',
-      releaseLabel: 'Public Release',
-      intro:
-        'VZ Files is now publicly available on files.vz.gay and file.vz.gay under PT Galeri Langkah Bahagia Yuwana (galbay), powered by temporary file storage infrastructure from VikingFiles.',
-      sections: [
+      versionSelectorLabel: 'Select release version',
+      releases: [
         {
-          heading: 'Core Transfer & Sharing Features',
-          items: [
+          version: 'v1.0.1',
+          releaseDate: 'Nov 25, 2026',
+          releaseLabel: 'SSO History Sync Update',
+          intro:
+            'This update introduces cross-device upload history sync for signed-in VZ SSO users—covering both anonymous and hashed transfers—along with search, filtering, and safer deletion confirmations.',
+          sections: [
             {
-              title: 'File Uploads & Remote URL Fetch',
-              desc: 'Supports chunked uploads for large files and remote HTTP/HTTPS URL transfers with optional folder path isolation.',
+              heading: 'Synced Transfer History',
+              items: [
+                {
+                  title: 'Cross-Device Sync (Up to 200 Entries)',
+                  desc: 'Signed-in VZ SSO accounts automatically sync both anonymous and hashed upload history, keeping links accessible across devices and between files.vz.gay and file.vz.gay.',
+                },
+                {
+                  title: 'Automatic Local History Merge on Sign-In',
+                  desc: 'Existing transfer history stored in your browser before sign-in merges cleanly into your VZ SSO account without duplicates.',
+                },
+                {
+                  title: 'Search & Source Filters',
+                  desc: 'Search by filename, hash, or folder path and filter entries across All, File Upload, Remote URL, Anonymous, or Hashed.',
+                },
+              ],
             },
             {
-              title: 'File Info Page & QR Codes',
-              desc: 'Batch-check file availability, copy clean VZ Files share links, and generate downloadable PNG QR codes.',
-            },
-            {
-              title: 'Official VikingFile Download Routing',
-              desc: 'Download actions route directly to official VikingFiles pages to keep infrastructure sustainable.',
+              heading: 'Deletion Safety & Control',
+              items: [
+                {
+                  title: 'Single & Clear-All Confirmation Dialogs',
+                  desc: 'Deleting individual entries or clearing all history prompts for confirmation with a clear notice that anonymous files remain on VikingFiles until automatic expiration.',
+                },
+                {
+                  title: 'Optional VikingFiles File Deletion for Hashed Uploads',
+                  desc: 'When removing a hashed upload whose profile is still in your SSO Vault, you can optionally check a box to permanently delete the file from VikingFiles as well.',
+                },
+              ],
             },
           ],
         },
         {
-          heading: 'VZ SSO Account & Multi-Hash Vault',
-          items: [
+          version: 'v1.0.0',
+          releaseDate: 'Nov 23, 2026',
+          releaseLabel: 'Initial Public Release',
+          intro:
+            'VZ Files is publicly available on files.vz.gay and file.vz.gay under PT Galeri Langkah Bahagia Yuwana (galbay), powered by temporary file storage infrastructure from VikingFiles.',
+          sections: [
             {
-              title: 'Cross-Device Multi-Hash Sync',
-              desc: 'Sign in with VZ SSO (accounts.vz.gay) to save, switch, and sync multiple VikingFiles User Hashes across devices.',
+              heading: 'Core Transfer & Sharing Features',
+              items: [
+                {
+                  title: 'File Uploads & Remote URL Fetch',
+                  desc: 'Supports chunked uploads for large files with progress tracking and cancellation, plus remote HTTP/HTTPS URL transfers with optional folder path isolation.',
+                },
+                {
+                  title: 'File Info Page & QR Codes',
+                  desc: 'Batch-check up to 100 hashes at once, share clean files.vz.gay/?f=HASH info pages, and generate downloadable PNG QR codes for VZ Files or VikingFile links.',
+                },
+                {
+                  title: 'Official VikingFile Download Routing',
+                  desc: 'Download actions route directly to official VikingFiles pages to keep infrastructure sustainable.',
+                },
+              ],
             },
             {
-              title: 'File Management & Onboarding Guide',
-              desc: 'Rename or delete files on your active User Hash from the Vault, complete with a 3-step guide for new VikingFiles users.',
+              heading: 'VZ SSO Account & Multi-Hash Vault',
+              items: [
+                {
+                  title: 'Cross-Device Multi-Hash Sync',
+                  desc: 'Sign in with VZ SSO (accounts.vz.gay) to save, switch, and sync multiple VikingFiles User Hashes across devices.',
+                },
+                {
+                  title: 'File Management & Onboarding Guide',
+                  desc: 'Browse paginated files, filter folder paths, and rename or delete files on your active User Hash, complete with a 3-step guide for new VikingFiles users.',
+                },
+                {
+                  title: 'Dual-Domain SSO Optimization',
+                  desc: 'Seamless sign-in, account menu (myaccount.vz.gay), and cross-tab sync on both files.vz.gay and file.vz.gay with language preference forwarding.',
+                },
+              ],
             },
             {
-              title: 'Dual-Domain SSO Optimization',
-              desc: 'Seamless sign-in and cross-tab sync on both files.vz.gay and file.vz.gay with language preference forwarding.',
-            },
-          ],
-        },
-        {
-          heading: 'User Experience & Public Launch',
-          items: [
-            {
-              title: 'Bilingual & Adaptive Themes',
-              desc: 'Full Indonesian and English support with System, Light, and Dark appearance modes.',
-            },
-            {
-              title: 'Rich Link Previews',
-              desc: 'Enhanced social cards and structured page titles so shared links render cleanly across messaging apps and search engines.',
+              heading: 'User Experience & Public Launch',
+              items: [
+                {
+                  title: 'Bilingual & Adaptive Themes',
+                  desc: 'Full Indonesian and English support with System, Light, and Dark appearance modes.',
+                },
+                {
+                  title: 'Rich Link Previews',
+                  desc: 'Enhanced social cards, custom favicons, and dynamic page titles so shared links render cleanly across messaging apps and search engines.',
+                },
+              ],
             },
           ],
         },
@@ -606,7 +776,7 @@ export const UI_COPY = {
       searchLink: 'VZ Search',
       tosLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',
-      changelogLink: 'v1.0.0 · Release Notes',
+      changelogLink: 'v1.0.1 · Release Notes',
       vikingSponsor: 'Powered by VikingFiles',
       globalSponsor: 'jajanserver.com (galbay)',
     },
