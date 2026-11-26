@@ -259,11 +259,24 @@ async function startServer() {
     profileLabel: string;
     path?: string;
     createdAt: string;
+    deletedAt?: string | null;
   }
 
-  const MAX_HISTORY_ITEMS = 200;
+  const MAX_HISTORY_ITEMS = 1024;
+  const RECYCLE_BIN_RETENTION_DAYS = 14;
+  const RECYCLE_BIN_RETENTION_MS = RECYCLE_BIN_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   const HISTORY_HASH_PATTERN = /^[a-zA-Z0-9_-]{2,128}$/;
-  const devHistoryStore = new Map<string, { items: DevHistoryItem[]; updatedAt: string }>();
+  const devHistoryStore = new Map<
+    string,
+    { items: DevHistoryItem[]; trash: DevHistoryItem[]; updatedAt: string }
+  >();
+
+  function isDevTrashExpired(deletedAt: string | null | undefined): boolean {
+    if (!deletedAt) return false;
+    const ms = Date.parse(deletedAt);
+    if (!Number.isFinite(ms)) return true;
+    return Date.now() - ms >= RECYCLE_BIN_RETENTION_MS;
+  }
 
   function sanitizeDevHistoryItem(raw: unknown): DevHistoryItem | null {
     if (!raw || typeof raw !== 'object') return null;
@@ -289,6 +302,9 @@ async function startServer() {
       ? new Date(rawDate).toISOString()
       : new Date().toISOString();
 
+    const rawDeletedAt = typeof obj.deletedAt === 'string' ? Date.parse(obj.deletedAt) : NaN;
+    const deletedAt = Number.isFinite(rawDeletedAt) ? new Date(rawDeletedAt).toISOString() : null;
+
     const profileId =
       typeof obj.profileId === 'string' && obj.profileId.trim()
         ? obj.profileId.trim().slice(0, 80)
@@ -312,7 +328,18 @@ async function startServer() {
           ? obj.path.trim().slice(0, 255)
           : undefined,
       createdAt,
+      deletedAt,
     };
+  }
+
+  function getDevBuckets(sub: string): { items: DevHistoryItem[]; trash: DevHistoryItem[]; updatedAt: string | null } {
+    const existing = devHistoryStore.get(sub);
+    if (!existing) return { items: [], trash: [], updatedAt: null };
+    const cleanTrash = existing.trash.filter((item) => !isDevTrashExpired(item.deletedAt));
+    if (cleanTrash.length !== existing.trash.length) {
+      devHistoryStore.set(sub, { ...existing, trash: cleanTrash });
+    }
+    return { items: existing.items, trash: cleanTrash, updatedAt: existing.updatedAt };
   }
 
   app.get('/api/history', async (req: Request, res: Response) => {
@@ -322,12 +349,15 @@ async function startServer() {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
-      const existing = devHistoryStore.get(sub);
+      const buckets = getDevBuckets(sub);
       res.json({
         synced: true,
         backend: 'dev-memory',
-        items: existing?.items ?? [],
-        updatedAt: existing?.updatedAt ?? null,
+        items: buckets.items,
+        trash: buckets.trash,
+        maxItems: MAX_HISTORY_ITEMS,
+        retentionDays: RECYCLE_BIN_RETENTION_DAYS,
+        updatedAt: buckets.updatedAt,
       });
     } catch {
       res.status(502).json({ error: 'Failed to load transfer history' });
@@ -341,38 +371,115 @@ async function startServer() {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
-      const rawList: unknown[] = Array.isArray(req.body?.items)
+      const rawActive: unknown[] = Array.isArray(req.body?.items)
         ? req.body.items
         : req.body?.item
           ? [req.body.item]
           : [];
-      const sanitized = rawList
+      const rawTrash: unknown[] = Array.isArray(req.body?.trashItems) ? req.body.trashItems : [];
+
+      const sanitizedActive = rawActive
         .map(sanitizeDevHistoryItem)
         .filter((x: DevHistoryItem | null): x is DevHistoryItem => x !== null)
+        .map((x) => ({ ...x, deletedAt: null }))
         .slice(0, MAX_HISTORY_ITEMS);
 
-      if (sanitized.length === 0) {
+      const sanitizedTrash = rawTrash
+        .map(sanitizeDevHistoryItem)
+        .filter(
+          (x: DevHistoryItem | null): x is DevHistoryItem =>
+            x !== null && Boolean(x.deletedAt) && !isDevTrashExpired(x.deletedAt)
+        )
+        .slice(0, MAX_HISTORY_ITEMS);
+
+      if (sanitizedActive.length === 0 && sanitizedTrash.length === 0) {
         res.status(400).json({ error: 'At least one valid history item is required' });
         return;
       }
 
-      const existing = devHistoryStore.get(sub)?.items ?? [];
-      const merged = new Map<string, DevHistoryItem>();
-      for (const item of existing) merged.set(item.hash, item);
-      for (const item of sanitized) {
-        const prev = merged.get(item.hash);
+      const current = getDevBuckets(sub);
+      const activeMap = new Map<string, DevHistoryItem>();
+      const trashMap = new Map<string, DevHistoryItem>();
+      for (const item of current.items) activeMap.set(item.hash, item);
+      for (const item of current.trash) trashMap.set(item.hash, item);
+
+      for (const item of sanitizedActive) {
+        trashMap.delete(item.hash);
+        const prev = activeMap.get(item.hash);
         if (!prev || item.createdAt >= prev.createdAt) {
-          merged.set(item.hash, item);
+          activeMap.set(item.hash, { ...item, deletedAt: null });
         }
       }
-      const items = Array.from(merged.values())
+      for (const item of sanitizedTrash) {
+        if (!activeMap.has(item.hash) && !trashMap.has(item.hash)) {
+          trashMap.set(item.hash, item);
+        }
+      }
+
+      const items = Array.from(activeMap.values())
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .slice(0, MAX_HISTORY_ITEMS);
+      const trash = Array.from(trashMap.values())
+        .sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''))
+        .slice(0, MAX_HISTORY_ITEMS);
       const updatedAt = new Date().toISOString();
-      devHistoryStore.set(sub, { items, updatedAt });
-      res.json({ synced: true, backend: 'dev-memory', items, updatedAt });
+      devHistoryStore.set(sub, { items, trash, updatedAt });
+      res.json({ synced: true, backend: 'dev-memory', items, trash, updatedAt });
     } catch {
       res.status(502).json({ error: 'Failed to save transfer history' });
+    }
+  });
+
+  app.patch('/api/history', async (req: Request, res: Response) => {
+    try {
+      const sub = await resolveAuth0Sub(req);
+      if (!sub) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const action =
+        req.body?.action === 'restore-all'
+          ? 'restore-all'
+          : req.body?.action === 'restore'
+            ? 'restore'
+            : '';
+      const targetHash = typeof req.body?.hash === 'string' ? req.body.hash.trim() : '';
+
+      if (!action || (action === 'restore' && !HISTORY_HASH_PATTERN.test(targetHash))) {
+        res.status(400).json({ error: 'Valid restore action and hash are required' });
+        return;
+      }
+
+      const current = getDevBuckets(sub);
+      let nextItems = [...current.items];
+      let nextTrash = [...current.trash];
+
+      if (action === 'restore-all') {
+        const restored = nextTrash.map((item) => ({ ...item, deletedAt: null }));
+        const merged = new Map<string, DevHistoryItem>();
+        for (const item of [...nextItems, ...restored]) merged.set(item.hash, item);
+        nextItems = Array.from(merged.values())
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, MAX_HISTORY_ITEMS);
+        nextTrash = [];
+      } else {
+        const found = nextTrash.find((item) => item.hash === targetHash);
+        if (found) {
+          nextTrash = nextTrash.filter((item) => item.hash !== targetHash);
+          nextItems = [
+            { ...found, deletedAt: null },
+            ...nextItems.filter((item) => item.hash !== targetHash),
+          ]
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+            .slice(0, MAX_HISTORY_ITEMS);
+        }
+      }
+
+      const updatedAt = new Date().toISOString();
+      devHistoryStore.set(sub, { items: nextItems, trash: nextTrash, updatedAt });
+      res.json({ synced: true, backend: 'dev-memory', items: nextItems, trash: nextTrash, updatedAt });
+    } catch {
+      res.status(502).json({ error: 'Failed to restore transfer history' });
     }
   });
 
@@ -384,6 +491,7 @@ async function startServer() {
         return;
       }
       const clearAll = req.query.all === '1' || req.query.all === 'true';
+      const permanent = req.query.permanent === '1' || req.query.permanent === 'true';
       const targetHash = typeof req.query.hash === 'string' ? req.query.hash.trim() : '';
 
       if (!clearAll && !HISTORY_HASH_PATTERN.test(targetHash)) {
@@ -391,11 +499,41 @@ async function startServer() {
         return;
       }
 
-      const existing = devHistoryStore.get(sub)?.items ?? [];
-      const nextItems = clearAll ? [] : existing.filter((item) => item.hash !== targetHash);
+      const current = getDevBuckets(sub);
+      let nextItems = [...current.items];
+      let nextTrash = [...current.trash];
       const updatedAt = new Date().toISOString();
-      devHistoryStore.set(sub, { items: nextItems, updatedAt });
-      res.json({ synced: true, backend: 'dev-memory', items: nextItems, updatedAt });
+
+      if (permanent) {
+        if (clearAll) {
+          nextTrash = [];
+        } else {
+          nextItems = nextItems.filter((item) => item.hash !== targetHash);
+          nextTrash = nextTrash.filter((item) => item.hash !== targetHash);
+        }
+      } else if (clearAll) {
+        const moved = nextItems.map((item) => ({ ...item, deletedAt: updatedAt }));
+        const trashMap = new Map<string, DevHistoryItem>();
+        for (const item of [...moved, ...nextTrash]) {
+          if (!trashMap.has(item.hash)) trashMap.set(item.hash, item);
+        }
+        nextItems = [];
+        nextTrash = Array.from(trashMap.values())
+          .sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''))
+          .slice(0, MAX_HISTORY_ITEMS);
+      } else {
+        const found = nextItems.find((item) => item.hash === targetHash);
+        if (found) {
+          nextItems = nextItems.filter((item) => item.hash !== targetHash);
+          nextTrash = [
+            { ...found, deletedAt: updatedAt },
+            ...nextTrash.filter((item) => item.hash !== targetHash),
+          ].slice(0, MAX_HISTORY_ITEMS);
+        }
+      }
+
+      devHistoryStore.set(sub, { items: nextItems, trash: nextTrash, updatedAt });
+      res.json({ synced: true, backend: 'dev-memory', items: nextItems, trash: nextTrash, updatedAt });
     } catch {
       res.status(502).json({ error: 'Failed to delete transfer history' });
     }

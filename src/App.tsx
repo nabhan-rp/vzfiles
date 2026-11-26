@@ -37,10 +37,15 @@ export default function App() {
   const vault = useSsoVault(lang);
   const {
     history,
+    trash,
     syncStatus: historySyncStatus,
     addHistoryItem,
     removeHistoryItem,
     clearHistory,
+    restoreHistoryItem,
+    restoreAllHistory,
+    permanentlyDeleteTrashItem,
+    emptyRecycleBin,
   } = useTransferHistory();
 
   const [inspectedHash, setInspectedHash] = useState<string | null>(() =>
@@ -143,10 +148,15 @@ export default function App() {
               onOpenLegal={() => handleOpenLegal('tos')}
               onInspectHash={handleInspectHash}
               history={history}
+              trash={trash}
               historySyncStatus={historySyncStatus}
               onAddHistory={addHistoryItem}
               onRemoveHistory={removeHistoryItem}
               onClearHistory={clearHistory}
+              onRestoreHistory={restoreHistoryItem}
+              onRestoreAllHistory={restoreAllHistory}
+              onDeletePermanentTrash={permanentlyDeleteTrashItem}
+              onEmptyRecycleBin={emptyRecycleBin}
             />
           )}
 

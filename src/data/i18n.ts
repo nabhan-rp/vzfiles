@@ -90,6 +90,7 @@ export const UI_COPY = {
       emptyTitle: 'Belum ada riwayat transfer',
       emptyDesc: 'Berkas yang Anda unggah (anonim maupun ber-User Hash) akan muncul di sini.',
       clearAll: 'Hapus Semua',
+      recycleBinBtn: 'Tempat Sampah',
       colFile: 'Nama Berkas',
       colSize: 'Ukuran',
       colSource: 'Sumber & Identitas',
@@ -98,31 +99,63 @@ export const UI_COPY = {
       sourceFile: 'Unggah File',
       sourceRemote: 'URL Remote',
       inspect: 'Info File',
-      remove: 'Hapus Riwayat',
+      remove: 'Pindahkan ke Tempat Sampah',
+    },
+    pagination: {
+      perPageLabel: 'Tampilkan',
+      allOption: 'SEMUA',
+      showingRange: 'Menampilkan {start}–{end} dari {total}',
+      showingAll: 'Menampilkan semua {total} entri',
+      prev: 'Sebelumnya',
+      next: 'Berikutnya',
+      pageOf: 'Hal {page} / {totalPages}',
+    },
+    recycleBin: {
+      title: 'Tempat Sampah Riwayat',
+      subtitle: 'Catatan riwayat unggahan yang dihapus disimpan sementara selama 14 hari sebelum dihapus permanen otomatis.',
+      close: 'Tutup',
+      retentionNotice:
+        'Entri di Tempat Sampah dapat dipulihkan kembali ke Riwayat Transfer kapan saja dalam 14 hari. Menghapus permanen atau mengosongkan Tempat Sampah hanya menghapus catatan riwayat di VZ Files—berkas yang sudah diunggah tetap berada di VikingFiles.',
+      searchPlaceholder: 'Cari riwayat di Tempat Sampah...',
+      emptyTitle: 'Tempat Sampah kosong',
+      emptyDesc: 'Catatan riwayat unggahan yang Anda hapus akan muncul di sini selama 14 hari.',
+      colExpires: 'Sisa Waktu',
+      daysRemaining: '{days} hari lagi',
+      restore: 'Pulihkan',
+      deletePermanent: 'Hapus Permanen',
+      confirmDeletePermanent: 'Hapus Permanen?',
+      restoreAll: 'Pulihkan Semua',
+      emptyBin: 'Kosongkan Tempat Sampah',
+      emptyConfirmPrompt: 'Hapus permanen {count} entri riwayat?',
+      confirmEmptyBin: 'Ya, Kosongkan',
+      cancel: 'Batal',
+      working: 'Memproses...',
     },
     historyDeleteModal: {
-      singleTitle: 'Hapus dari Riwayat Transfer?',
-      allTitle: 'Hapus Semua Riwayat Transfer?',
-      singleSubtitleLocal: 'Catatan unggahan ini akan dihapus dari perangkat Anda.',
-      singleSubtitleSynced: 'Catatan unggahan ini akan dihapus dari akun VZ SSO Anda di semua perangkat.',
-      allSubtitleLocal: 'Sebanyak {count} catatan riwayat di perangkat ini akan dihapus.',
-      allSubtitleSynced: 'Sebanyak {count} catatan riwayat di akun VZ SSO Anda akan dihapus dari semua perangkat.',
-      disclaimerHeading: 'Pemberitahuan Penyimpanan Berkas',
+      singleTitle: 'Pindahkan ke Tempat Sampah?',
+      allTitle: 'Pindahkan Semua Riwayat ke Tempat Sampah?',
+      singleSubtitleLocal: 'Catatan unggahan ini akan dipindahkan ke Tempat Sampah selama 14 hari di perangkat Anda.',
+      singleSubtitleSynced: 'Catatan unggahan ini akan dipindahkan ke Tempat Sampah selama 14 hari di akun VZ SSO Anda.',
+      allSubtitleLocal: 'Sebanyak {count} catatan riwayat akan dipindahkan ke Tempat Sampah selama 14 hari.',
+      allSubtitleSynced: 'Sebanyak {count} catatan riwayat di akun VZ SSO Anda akan dipindahkan ke Tempat Sampah selama 14 hari.',
+      disclaimerHeading: 'Pemberitahuan Tempat Sampah & Berkas',
       disclaimerAnonymous:
-        'Aksi ini hanya menghapus catatan riwayat di VZ Files. Berkas unggahan anonim tetap tersimpan di VikingFiles hingga kedaluwarsa otomatis dan tidak dapat dihapus melalui layanan.',
+        'Catatan riwayat akan dipindahkan ke Tempat Sampah selama 14 hari sebelum dihapus permanen otomatis. Berkas unggahan anonim tetap tersimpan di VikingFiles hingga kedaluwarsa otomatis dan tidak dapat dihapus melalui layanan.',
       disclaimerHashedAvailable:
-        'Secara bawaan, aksi ini hanya menghapus catatan riwayat di VZ Files dan tidak menghapus berkas di VikingFiles. Jika Anda ingin menghapus berkas aslinya secara permanen, aktifkan opsi di bawah.',
+        'Secara bawaan, catatan ini hanya dipindahkan ke Tempat Sampah selama 14 hari dan berkas di VikingFiles tetap aman. Jika Anda ingin menghapus berkas aslinya secara permanen, aktifkan opsi di bawah.',
+      disclaimerHashedPermanent:
+        'Berkas asli akan dihapus permanen dari VikingFiles dan catatan riwayatnya langsung dihapus permanen (tidak masuk ke Tempat Sampah) agar tautan mati tidak tersisa.',
       disclaimerHashedMissingProfile:
-        'Aksi ini hanya menghapus catatan riwayat di VZ Files. Profil User Hash asal berkas ini tidak lagi tersimpan di Brankas SSO Anda, sehingga berkas asli tetap berada di VikingFiles.',
+        'Catatan riwayat akan dipindahkan ke Tempat Sampah selama 14 hari. Profil User Hash asal berkas ini tidak lagi tersimpan di Brankas SSO Anda, sehingga berkas asli tetap berada di VikingFiles.',
       disclaimerAll:
-        'Aksi ini hanya menghapus daftar catatan riwayat di VZ Files. Seluruh berkas yang telah diunggah tetap tersimpan di VikingFiles. Untuk menghapus berkas ber-User Hash secara permanen, hapus satu per satu atau kelola melalui Brankas SSO.',
+        'Seluruh daftar catatan riwayat akan dipindahkan ke Tempat Sampah selama 14 hari dan dapat dipulihkan kembali. Berkas yang sudah diunggah tetap tersimpan di VikingFiles. Untuk menghapus berkas ber-User Hash secara permanen, hapus satu per satu atau kelola melalui Brankas SSO.',
       vikingCheckboxLabel: 'Sekaligus hapus berkas permanen dari VikingFiles (Profil: {profile})',
-      vikingCheckboxHint: 'Tindakan ini permanen dan berkas tidak dapat dipulihkan setelah dihapus dari VikingFiles.',
+      vikingCheckboxHint: 'Tindakan ini permanen, langsung menghapus riwayat tanpa melalui Tempat Sampah, dan berkas tidak dapat dipulihkan.',
       cancel: 'Batal',
-      confirmSingle: 'Ya, Hapus Riwayat',
-      confirmSingleWithViking: 'Ya, Hapus Riwayat & Berkas',
-      confirmAll: 'Ya, Hapus Semua Riwayat',
-      deleting: 'Menghapus...',
+      confirmSingle: 'Ya, Pindahkan ke Sampah',
+      confirmSingleWithViking: 'Ya, Hapus Permanen',
+      confirmAll: 'Ya, Pindahkan Semua',
+      deleting: 'Memproses...',
       deleteFailedFallback: 'Gagal menghapus berkas dari VikingFiles. Riwayat tidak diubah.',
     },
     check: {
@@ -262,7 +295,7 @@ export const UI_COPY = {
       privacyItems: [
         {
           heading: '1. Data Perangkat & Sinkronisasi Akun',
-          body: 'Riwayat transfer dan daftar User Hash VikingFile disimpan di perangkat Anda. Saat Anda masuk menggunakan VZ SSO (accounts.vz.gay), daftar profil User Hash dan riwayat unggahan (termasuk unggahan anonim, hingga 200 entri terbaru) disinkronkan lintas perangkat ke akun Anda tanpa pernah menyimpan isi berkas. Anda dapat menghapus riwayat kapan saja.',
+          body: 'Riwayat transfer dan daftar User Hash VikingFile disimpan di perangkat Anda. Saat Anda masuk menggunakan VZ SSO (accounts.vz.gay), daftar profil User Hash dan riwayat unggahan (termasuk unggahan anonim, hingga 1.024 entri terbaru) disinkronkan lintas perangkat ke akun Anda tanpa pernah menyimpan isi berkas. Catatan riwayat yang dihapus disimpan sementara di Tempat Sampah selama 14 hari sebelum dihapus permanen otomatis, dan dapat dikosongkan kapan saja.',
         },
         {
           heading: '2. Pemrosesan Transfer Berkas',
@@ -280,6 +313,45 @@ export const UI_COPY = {
       title: 'Catatan Rilis VZ Files',
       versionSelectorLabel: 'Pilih versi rilis',
       releases: [
+        {
+          version: 'v1.1.0',
+          releaseDate: '26 Nov 2026',
+          releaseLabel: 'Tempat Sampah & Kapasitas 1.024',
+          intro:
+            'Pembaruan ini menambahkan Tempat Sampah 14 hari untuk riwayat unggahan yang dihapus, memperluas kapasitas riwayat hingga 1.024 entri, serta menghadirkan pilihan tampilan halaman 25 / 50 / 100 / SEMUA.',
+          sections: [
+            {
+              heading: 'Tempat Sampah Riwayat (Retensi 14 Hari)',
+              items: [
+                {
+                  title: 'Pulihkan Riwayat Terhapus Kapan Saja',
+                  desc: 'Menghapus satu entri atau semua riwayat kini memindahkannya ke modal Tempat Sampah yang tersinkronisasi lintas perangkat untuk pengguna VZ SSO, lengkap dengan penghitung sisa hari otomatis.',
+                },
+                {
+                  title: 'Pulihkan Massal & Hapus Permanen Terkendali',
+                  desc: 'Pulihkan satu entri atau semua sekaligus, hapus permanen dengan konfirmasi dua langkah, atau kosongkan Tempat Sampah kapan saja. Entri yang melewati 14 hari dibersihkan otomatis.',
+                },
+                {
+                  title: 'Penghapusan Berkas Ber-Hash Langsung Permanen',
+                  desc: 'Saat menghapus berkas ber-User Hash sekaligus mencentang opsi hapus di VikingFiles, catatan riwayat langsung dihapus permanen agar tautan yang sudah tidak aktif tidak masuk ke Tempat Sampah.',
+                },
+              ],
+            },
+            {
+              heading: 'Kapasitas Lebih Besar & Paginasi Fleksibel',
+              items: [
+                {
+                  title: 'Ekspansi Kapasitas hingga 1.024 Riwayat',
+                  desc: 'Kapasitas penyimpanan riwayat unggahan diperluas dari 200 menjadi hingga 1.024 entri aktif beserta 1.024 entri di Tempat Sampah.',
+                },
+                {
+                  title: 'Pilihan Tampilan 25 / 50 / 100 / SEMUA',
+                  desc: 'Atur jumlah baris riwayat per halaman sesuai kenyamanan Anda (bawaan 25 entri) lengkap dengan indikator rentang aktif dan navigasi halaman di Riwayat Transfer maupun Tempat Sampah.',
+                },
+              ],
+            },
+          ],
+        },
         {
           version: 'v1.0.1',
           releaseDate: '25 Nov 2026',
@@ -386,7 +458,7 @@ export const UI_COPY = {
       searchLink: 'VZ Search',
       tosLink: 'Ketentuan Layanan',
       privacyLink: 'Kebijakan Privasi',
-      changelogLink: 'v1.0.1 · Catatan Rilis',
+      changelogLink: 'v1.1.0 · Catatan Rilis',
       vikingSponsor: 'Didukung oleh VikingFiles',
       globalSponsor: 'jajanserver.com (galbay)',
     },
@@ -480,6 +552,7 @@ export const UI_COPY = {
       emptyTitle: 'No transfers yet',
       emptyDesc: 'Files you upload (anonymous or hashed) will appear here.',
       clearAll: 'Clear All',
+      recycleBinBtn: 'Recycle Bin',
       colFile: 'Filename',
       colSize: 'Size',
       colSource: 'Source & Identity',
@@ -488,31 +561,63 @@ export const UI_COPY = {
       sourceFile: 'File Upload',
       sourceRemote: 'Remote URL',
       inspect: 'File Info',
-      remove: 'Remove History',
+      remove: 'Move to Recycle Bin',
+    },
+    pagination: {
+      perPageLabel: 'Show',
+      allOption: 'ALL',
+      showingRange: 'Showing {start}–{end} of {total}',
+      showingAll: 'Showing all {total} entries',
+      prev: 'Previous',
+      next: 'Next',
+      pageOf: 'Page {page} / {totalPages}',
+    },
+    recycleBin: {
+      title: 'History Recycle Bin',
+      subtitle: 'Deleted upload history entries are kept for 14 days before automatic permanent removal.',
+      close: 'Close',
+      retentionNotice:
+        'Entries in the Recycle Bin can be restored back to Transfer History within 14 days. Permanently deleting entries or emptying the bin only removes history records in VZ Files—uploaded files remain stored on VikingFiles.',
+      searchPlaceholder: 'Search Recycle Bin...',
+      emptyTitle: 'Recycle Bin is empty',
+      emptyDesc: 'Upload history entries you delete will be held here for 14 days before auto-purge.',
+      colExpires: 'Auto-Purge',
+      daysRemaining: '{days}d left',
+      restore: 'Restore',
+      deletePermanent: 'Delete Permanently',
+      confirmDeletePermanent: 'Delete Forever?',
+      restoreAll: 'Restore All',
+      emptyBin: 'Empty Recycle Bin',
+      emptyConfirmPrompt: 'Permanently delete {count} history entries?',
+      confirmEmptyBin: 'Yes, Empty Bin',
+      cancel: 'Cancel',
+      working: 'Working...',
     },
     historyDeleteModal: {
-      singleTitle: 'Remove from Transfer History?',
-      allTitle: 'Clear All Transfer History?',
-      singleSubtitleLocal: 'This upload entry will be removed from this device.',
-      singleSubtitleSynced: 'This upload entry will be removed from your VZ SSO account across all devices.',
-      allSubtitleLocal: 'All {count} history entries on this device will be removed.',
-      allSubtitleSynced: 'All {count} history entries in your VZ SSO account will be removed across all devices.',
-      disclaimerHeading: 'File Storage Notice',
+      singleTitle: 'Move to Recycle Bin?',
+      allTitle: 'Move All History to Recycle Bin?',
+      singleSubtitleLocal: 'This upload entry will be moved to the Recycle Bin for 14 days on this device.',
+      singleSubtitleSynced: 'This upload entry will be moved to the Recycle Bin for 14 days in your VZ SSO account.',
+      allSubtitleLocal: 'All {count} history entries will be moved to the Recycle Bin for 14 days.',
+      allSubtitleSynced: 'All {count} history entries in your VZ SSO account will be moved to the Recycle Bin for 14 days.',
+      disclaimerHeading: 'Recycle Bin & File Storage Notice',
       disclaimerAnonymous:
-        'This action only removes the history entry in VZ Files. Anonymous files remain stored on VikingFiles until automatic expiration and cannot be deleted through the service.',
+        'This moves the history entry to the Recycle Bin for 14 days before automatic permanent removal. Anonymous files remain stored on VikingFiles until automatic expiration and cannot be deleted through the service.',
       disclaimerHashedAvailable:
-        'By default, this only removes the history entry in VZ Files and leaves the file intact on VikingFiles. Enable the option below if you also want to permanently delete the file from VikingFiles.',
+        'By default, this moves the history entry to the Recycle Bin for 14 days and leaves the file intact on VikingFiles. Enable the option below if you also want to permanently delete the file from VikingFiles.',
+      disclaimerHashedPermanent:
+        'The file will be permanently deleted from VikingFiles and its history entry will be permanently removed immediately (bypassing the Recycle Bin) so dead links are not retained.',
       disclaimerHashedMissingProfile:
-        'This action only removes the history entry in VZ Files. The original User Hash profile is no longer in your SSO Vault, so the file itself remains stored on VikingFiles.',
+        'This moves the history entry to the Recycle Bin for 14 days. The original User Hash profile is no longer in your SSO Vault, so the file itself remains stored on VikingFiles.',
       disclaimerAll:
-        'This action only clears your history list in VZ Files. All uploaded files remain stored on VikingFiles. To permanently delete hashed files, delete them individually or manage them in SSO Vault.',
+        'All history entries will be moved to the Recycle Bin for 14 days and can be restored anytime. All uploaded files remain stored on VikingFiles. To permanently delete hashed files, delete them individually or manage them in SSO Vault.',
       vikingCheckboxLabel: 'Also permanently delete file from VikingFiles (Profile: {profile})',
-      vikingCheckboxHint: 'This is permanent and the file cannot be recovered once deleted from VikingFiles.',
+      vikingCheckboxHint: 'This is permanent, bypasses the Recycle Bin, and the file cannot be recovered once deleted.',
       cancel: 'Cancel',
-      confirmSingle: 'Yes, Remove History',
-      confirmSingleWithViking: 'Yes, Delete History & File',
-      confirmAll: 'Yes, Clear All History',
-      deleting: 'Deleting...',
+      confirmSingle: 'Yes, Move to Bin',
+      confirmSingleWithViking: 'Yes, Delete Permanently',
+      confirmAll: 'Yes, Move All to Bin',
+      deleting: 'Processing...',
       deleteFailedFallback: 'Failed to delete file from VikingFiles. History entry was kept.',
     },
     check: {
@@ -652,7 +757,7 @@ export const UI_COPY = {
       privacyItems: [
         {
           heading: '1. Device Storage & Account Sync',
-          body: 'Transfer history and saved VikingFile User Hashes are stored on your device. When signed in via VZ SSO (accounts.vz.gay), your User Hash profiles and transfer history (including anonymous uploads, up to the latest 200 entries) sync across devices for your account without ever storing file contents. You may clear your history at any time.',
+          body: 'Transfer history and saved VikingFile User Hashes are stored on your device. When signed in via VZ SSO (accounts.vz.gay), your User Hash profiles and transfer history (including anonymous uploads, up to the latest 1,024 entries) sync across devices for your account without ever storing file contents. Deleted history entries are held in the Recycle Bin for 14 days before automatic permanent removal, and can be emptied at any time.',
         },
         {
           heading: '2. File Transfer Processing',
@@ -670,6 +775,45 @@ export const UI_COPY = {
       title: 'VZ Files Release Notes',
       versionSelectorLabel: 'Select release version',
       releases: [
+        {
+          version: 'v1.1.0',
+          releaseDate: 'Nov 26, 2026',
+          releaseLabel: 'Recycle Bin & 1,024 History Limit',
+          intro:
+            'This release introduces a 14-day Recycle Bin for deleted transfer history, expands history capacity to 1,024 entries, and adds flexible 25 / 50 / 100 / ALL pagination controls.',
+          sections: [
+            {
+              heading: 'History Recycle Bin (14-Day Retention)',
+              items: [
+                {
+                  title: 'Recover Deleted History Across Devices',
+                  desc: 'Deleting a single entry or clearing all history now moves records to a dedicated Recycle Bin modal synced across devices for signed-in VZ SSO accounts, with a live per-item days-remaining countdown.',
+                },
+                {
+                  title: 'Bulk Restore & Controlled Permanent Purge',
+                  desc: 'Restore individual entries or Restore All at once, permanently delete with two-step confirmation, or Empty Recycle Bin anytime. Items older than 14 days are automatically purged.',
+                },
+                {
+                  title: 'Permanent Bypass for VikingFiles File Deletion',
+                  desc: 'When removing a hashed upload with the optional VikingFiles permanent delete box checked, the history record is permanently deleted immediately so dead links do not linger in the Recycle Bin.',
+                },
+              ],
+            },
+            {
+              heading: 'Expanded Capacity & Flexible Pagination',
+              items: [
+                {
+                  title: 'Up to 1,024 Transfer History Entries',
+                  desc: 'Expanded upload history storage from 200 up to 1,024 active entries plus up to 1,024 entries in the Recycle Bin.',
+                },
+                {
+                  title: 'Selectable 25 / 50 / 100 / ALL View',
+                  desc: 'Choose how many history rows appear per page (25 by default) with a live range indicator and Previous/Next navigation in both Transfer History and the Recycle Bin.',
+                },
+              ],
+            },
+          ],
+        },
         {
           version: 'v1.0.1',
           releaseDate: 'Nov 25, 2026',
@@ -776,7 +920,7 @@ export const UI_COPY = {
       searchLink: 'VZ Search',
       tosLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',
-      changelogLink: 'v1.0.1 · Release Notes',
+      changelogLink: 'v1.1.0 · Release Notes',
       vikingSponsor: 'Powered by VikingFiles',
       globalSponsor: 'jajanserver.com (galbay)',
     },

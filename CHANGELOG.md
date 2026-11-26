@@ -3,6 +3,22 @@
 Semua perubahan penting pada **VZ Files** (`files.vz.gay` & `file.vz.gay`) didokumentasikan pada berkas ini.
 Format mengacu pada [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-11-26
+
+Pembaruan fitur **Tempat Sampah (Recycle Bin)** berretensi 14 hari untuk riwayat unggahan yang dihapus, perluasan kapasitas penyimpanan hingga **1.024 entri**, serta paginasi fleksibel **25 / 50 / 100 / SEMUA**.
+
+### Ditambahkan (Added)
+- **Tempat Sampah Riwayat (Retensi Otomatis 14 Hari)**: Menghapus satu entri atau semua riwayat kini memindahkannya ke Tempat Sampah (`deleted_at`) selama 14 hari sebelum dibersihkan otomatis di sisi server maupun klien. Tersedia modal **Tempat Sampah** terpisah dari header Riwayat Transfer lengkap dengan pencarian, penghitung sisa hari per entri, **Pulihkan**, **Pulihkan Semua**, **Hapus Permanen** (konfirmasi dua langkah), dan **Kosongkan Tempat Sampah**.
+- **Endpoint Pemulihan & Penghapusan Permanen (`/api/history`)**: Penambahan metode `PATCH /api/history` (`restore` / `restore-all`), perilaku `DELETE /api/history` default soft-delete ke Tempat Sampah, serta `DELETE /api/history?permanent=1` untuk penghapusan permanen per berkas maupun pengosongan Tempat Sampah (dukungan penuh Cloudflare D1 dan fallback `PORTAL_KV`).
+- **Paginasi Riwayat Fleksibel (`25 / 50 / 100 / SEMUA`)**: Komponen paginasi dengan pemilih jumlah baris per halaman (`25`, `50`, `100`, atau `SEMUA`, tersimpan di preferensi browser untuk Riwayat Transfer) lengkap dengan rentang aktif dan tombol navigasi halaman pada Riwayat Transfer maupun modal Tempat Sampah.
+
+### Diubah & Ditingkatkan (Changed)
+- **Ekspansi Kapasitas Riwayat ke 1.024 Entri**: Batas penyimpanan riwayat unggahan ditingkatkan dari `200` menjadi `1.024` entri aktif dan `1.024` entri di Tempat Sampah.
+- **Migrasi Skema D1 Tanpa Downtime**: Penambahan kolom `deleted_at` dan indeks `idx_user_transfer_history_sub_deleted_created` pada `cloudflare/vz-files-schema.sql` serta migrasi otomatis `ALTER TABLE` pada `/functions/api/history.ts` bagi basis data produksi yang sudah berjalan.
+- **Bypass Tempat Sampah untuk Hapus Berkas VikingFiles**: Saat pengguna mencentang opsi opsional hapus berkas permanen dari VikingFiles pada unggahan ber-User Hash, catatan riwayat langsung dihapus permanen (`?permanent=1`) agar tautan mati tidak masuk ke Tempat Sampah.
+
+---
+
 ## [1.0.1] — 2026-11-25
 
 Pembaruan sinkronisasi riwayat unggahan lintas perangkat untuk pengguna **VZ SSO** (mencakup unggahan anonim maupun ber-User Hash) beserta kontrol pencarian, filter, dan konfirmasi penghapusan yang lebih aman.

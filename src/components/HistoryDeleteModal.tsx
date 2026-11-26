@@ -129,7 +129,7 @@ export function HistoryDeleteModal({
             </div>
           )}
 
-          {/* Clear Disclaimer Notice */}
+          {/* Clear Recycle Bin & VikingFiles Storage Disclaimer */}
           <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200 dark:border-amber-900/50 flex items-start gap-2.5 text-xs sm:text-sm text-amber-900 dark:text-amber-200">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
             <div className="space-y-1">
@@ -140,7 +140,9 @@ export function HistoryDeleteModal({
                   : target.item.isAnonymous
                     ? t.disclaimerAnonymous
                     : canDeleteOnViking
-                      ? t.disclaimerHashedAvailable
+                      ? deleteFromViking
+                        ? t.disclaimerHashedPermanent
+                        : t.disclaimerHashedAvailable
                       : t.disclaimerHashedMissingProfile}
               </p>
             </div>

@@ -23,8 +23,12 @@ CREATE TABLE IF NOT EXISTS user_transfer_history (
   profile_label TEXT NOT NULL DEFAULT '',
   path TEXT DEFAULT NULL,
   created_at TEXT NOT NULL,
+  deleted_at TEXT DEFAULT NULL,
   PRIMARY KEY (sub, hash)
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_transfer_history_sub_created
   ON user_transfer_history (sub, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_transfer_history_sub_deleted_created
+  ON user_transfer_history (sub, deleted_at, created_at DESC);
